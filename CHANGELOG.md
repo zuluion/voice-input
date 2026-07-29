@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2026.07.29.007] - 2026-07-29
+
+### 🐛 Bug Fixes & Scoop Persistence
+- **Scoop Config Directory Fix**: Added `pre_install` hook to `voice-input.json` to pre-create `config.json` as a file before Scoop links persistence, preventing Scoop from miscreating `config.json` as a directory.
+- **ConfigManager AppData Fallback**: Added `resolve_config_path()` in `src/config.py` with AppData directory fallback (`%APPDATA%\VoiceInput\config.json`) if local `config.json` is a directory or missing, providing robust native Windows persistence across upgrades.
+
 ## [2026.07.29.006] - 2026-07-29
 
 ### 🚀 Packaging & Scoop

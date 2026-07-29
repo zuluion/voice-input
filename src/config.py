@@ -45,13 +45,31 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     }
 }
 
+def resolve_config_path(config_path: str = None) -> str:
+    if config_path:
+        return config_path
+
+    # Check local portable config.json
+    local_path = "config.json"
+    if os.path.isfile(local_path):
+        return local_path
+    elif os.path.isdir(local_path):
+        print(f"[Config] Warning: '{local_path}' is a directory (created by misconfigured Scoop). Falling back to AppData.")
+
+    # Standard Windows AppData directory (%APPDATA%\VoiceInput\config.json)
+    appdata = os.environ.get("APPDATA") or os.path.expanduser("~")
+    config_dir = os.path.join(appdata, "VoiceInput")
+    os.makedirs(config_dir, exist_ok=True)
+    return os.path.join(config_dir, "config.json")
+
 class ConfigManager:
-    def __init__(self, config_path: str = "config.json") -> None:
-        self.config_path = config_path
+    def __init__(self, config_path: str = None) -> None:
+        self.config_path = resolve_config_path(config_path)
+        print(f"[Config] Using config file: {self.config_path}")
         self.config: Dict[str, Any] = self.load_config()
 
     def load_config(self) -> Dict[str, Any]:
-        if not os.path.exists(self.config_path):
+        if not os.path.exists(self.config_path) or os.path.isdir(self.config_path):
             self.save_config(DEFAULT_CONFIG)
             return DEFAULT_CONFIG.copy()
         try:
@@ -64,6 +82,11 @@ class ConfigManager:
     def save_config(self, config: Dict[str, Any] = None) -> None:
         if config is not None:
             self.config = config
+
+        parent_dir = os.path.dirname(self.config_path)
+        if parent_dir:
+            os.makedirs(parent_dir, exist_ok=True)
+
         with open(self.config_path, "w", encoding="utf-8") as f:
             json.dump(self.config, f, ensure_ascii=False, indent=2)
 
