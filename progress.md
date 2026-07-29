@@ -21,6 +21,6 @@
 - 编写并运行 seam 单元测试用例集 [tests/](file:///D:/AllProjects/OtherProjects_Workspace/voice-input/tests)，100% 测试通过。
 
 ### Phase 5: 规格与项目文档全面更新
-- 更新同步规格 PRD 文档 [docs/specs/speech_input_windows_spec.md](file:///D:/AllProjects/OtherProjects_Workspace/voice-input/docs/specs/speech_input_windows_spec.md)。
-- 更新同步 [README.md](file:///D:/AllProjects/OtherProjects_Workspace/voice-input/README.md) 使用说明与新增功能特性。
+- 更新同步规格 PRD 文档 [docs/specs/speech_input_windows_spec.md](file:///D:/AllProjects/OtherProjects_Workspace/voice-input/docs/specs/speech_input_windows_spec.md)（全面更新默认热键为 `Right Control` 与核心规则）。
+- 更新同步 [README.md](file:///D:/AllProjects/OtherProjects_Workspace/voice-input/README.md) 使用说明（全面更新推荐热键为 `Right Control` 示例）。
 - 更新同步 [findings.md](file:///D:/AllProjects/OtherProjects_Workspace/voice-input/findings.md) 与 [task_plan.md](file:///D:/AllProjects/OtherProjects_Workspace/voice-input/task_plan.md)。

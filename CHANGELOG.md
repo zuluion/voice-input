@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2026.07.29.005] - 2026-07-29
+
+### 📝 Documentation
+- **Hotkey Documentation Sync**: Updated [README.md](file:///D:/AllProjects/OtherProjects_Workspace/voice-input/README.md) and [docs/specs/speech_input_windows_spec.md](file:///D:/AllProjects/OtherProjects_Workspace/voice-input/docs/specs/speech_input_windows_spec.md) examples and setup instructions to use `Right Control` (`Key.ctrl_r`) as the default recommended trigger hotkey.
+
 ## [2026.07.29.004] - 2026-07-29
 
 ### 🐛 Bug Fixes

@@ -15,7 +15,7 @@
 基于 Python 3.10+ 与 PySide6 开发一款 Windows 平台的系统托盘语音输入法应用。
 
 该应用具备以下核心特性：
-- **全局长按热键触发**：按住指定热键（如 `Right Alt` 或 `Alt+Space`）即刻开始录音，松开按键自动精修并注入文本。支持交互式按键录制。
+- **全局长按热键触发**：按住指定热键（推荐 `Right Control` 或 `Alt+Space`）即刻开始录音，松开按键自动精修并注入文本。支持交互式按键录制。
 - **多 Provider ASR 架构**：深度接入小米 MiMo (`mimo-v2.5-asr` Base64 Audio API)、豆包 (Volcengine)、通义千问 (DashScope) 以及 OpenAI 兼容的 `/v1/audio/transcriptions` 接口。
 - **三阶段视觉交互胶囊悬浮窗**：置顶无任务栏图标的胶囊浮窗，具备 **`Preparing...`** (缓冲扫频动画)、**`Listening...`** (亮白 + 🔴 REC 发光指示灯 + RMS 动态波形条)、**`Refining...`** (柔和紫光) 三阶段流畅状态转换。
 - **智能 LLM 文本精修与口语清洗 (Refinement)**：通过 OpenAI 兼容接口接入 LLM，不仅修复谐音与术语，更能自动去除“呃”、“啊”、“那个”等口语冗余，转化为流畅书面语。支持在 UI 中自定义 System Prompt 并一键恢复默认。
@@ -30,8 +30,8 @@
 
 ## User Stories
 
-1. As a Windows power user, I want to trigger voice recording by holding down a configurable global key (e.g. `Right Alt`), so that I can capture my spoken words instantly without focusing on a specific app window.
-2. As a user, I want to interactively record my custom trigger hotkey inside the settings GUI using a keyboard keycap badge (e.g. `[ Right Alt ]`), so that I don't need to manually type raw key names.
+1. As a Windows power user, I want to trigger voice recording by holding down a configurable global key (e.g. `Right Control`), so that I can capture my spoken words instantly without focusing on a specific app window or losing menu focus.
+2. As a user, I want to interactively record my custom trigger hotkey inside the settings GUI using a keyboard keycap badge (e.g. `[ Right Control ]`), so that I don't need to manually type raw key names.
 3. As a developer, I want to connect the app to third-party ASR providers (Xiaomi MiMo `mimo-v2.5-asr`, Doubao, Qwen, OpenAI-compatible HTTP), so that I can leverage state-of-the-art speech recognition models.
 4. As a user, I want a 3-stage floating capsule window (`Preparing...` -> `Listening...` with a glowing red 🔴 REC dot -> `Refining...`), so that I know precisely when the microphone is ready and capturing my voice.
 5. As a user, I want the capsule window's 5 waveform bars to dynamically respond to my actual speaking volume level in real-time, so that I can intuitively verify audio input quality.
@@ -82,7 +82,7 @@
 
 #### A. Hotkey & Event Hook (`core/hotkey.py`)
 - 使用 `pynput.keyboard` 全局 Hook 捕获修饰键/组合键状态（`on_press` / `on_release`）。
-- 增强 `Right Alt` (AltGr) 与 Win32 `VK_RMENU (165)` / `VK_LMENU (164)` 的匹配识别，排除 Windows 系统的伴随信号干扰。
+- 精确匹配 `Right Control` (VK 163) 与 `Right Alt` (VK 165)，严格隔离左侧修饰键，避免 Windows 系统的伴随信号干扰。
 - 维持按键防抖逻辑，触发 `recording_started` 与 `recording_stopped` 信号。
 
 #### B. Audio & Waveform Level Engine (`audio/recorder.py`)
@@ -121,7 +121,7 @@
 - 高质感 `#12151e` 暗黑护眼主题（QSS）。
 - **ASR 供应商全联动**：切换供应商自动更新 Key 标签、App ID 显隐、Base URL & Default Model。
 - **动态获取可用模型**：`🔄 Fetch Models` 按钮请求 `{base_url}/models` 并将 Model Name 升级为下拉选择框。
-- **交互式热键录制器 (`HotkeyRecorderWidget`)**：基于同源 `pynput` 监听捕获，键盘键帽徽章展示（如 `[ Right Alt ]`），带 `↺ Reset` 按钮。
+- **交互式热键录制器 (`HotkeyRecorderWidget`)**：基于同源 `pynput` 监听捕获，键盘键帽徽章展示（推荐 `[ Right Control ]`），带 `↺ Reset` 按钮。
 - **自定义 Prompt 编辑器**：支持多行自定义 System Prompt 编辑与一键恢复默认。
 - **一键连通性测试**：`Test ASR Connection` 与 `Test LLM Connection` 按钮。
 
