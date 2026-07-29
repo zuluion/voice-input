@@ -1,29 +1,29 @@
-﻿{
-    "version":  "2026.07.29.003",
-    "description":  "Windows System Tray Voice Input App using PySide6, Multi-Provider ASR and LLM Refinement",
-    "homepage":  "https://github.com/zuluion/voice-input",
-    "license":  "MIT",
-    "architecture":  {
-                         "64bit":  {
-                                       "url":  "https://github.com/zuluion/voice-input/releases/download/v2026.07.29.003/VoiceInput.exe",
-                                       "hash":  "5dc38d3cd09efa61eda4879e0aaff31d51d594e80ea472ae3eea6e1f98cfb0b4"
-                                   }
-                     },
-    "bin":  "VoiceInput.exe",
-    "shortcuts":  [
-                      [
-                          "VoiceInput.exe",
-                          "Voice Input"
-                      ]
-                  ],
-    "checkver":  {
-                     "github":  "https://github.com/zuluion/voice-input"
-                 },
-    "autoupdate":  {
-                       "architecture":  {
-                                            "64bit":  {
-                                                          "url":  "https://github.com/zuluion/voice-input/releases/download/v$version/VoiceInput.exe"
-                                                      }
-                                        }
-                   }
+{
+  "version": "2026.07.29.005",
+  "description": "Windows System Tray Voice Input App using PySide6, Multi-Provider ASR and LLM Refinement",
+  "homepage": "https://github.com/zuluion/voice-input",
+  "license": "MIT",
+  "architecture": {
+    "64bit": {
+      "url": "https://github.com/zuluion/voice-input/releases/download/v2026.07.29.005/VoiceInput.exe",
+      "hash": "78e57ccd7afab3513f97a3a951b34ee69a416cbc634aceae3511ae0155aca999"
+    }
+  },
+  "bin": "VoiceInput.exe",
+  "shortcuts": [
+    [
+      "VoiceInput.exe",
+      "Voice Input"
+    ]
+  ],
+  "checkver": {
+    "github": "https://github.com/zuluion/voice-input"
+  },
+  "autoupdate": {
+    "architecture": {
+      "64bit": {
+        "url": "https://github.com/zuluion/voice-input/releases/download/v$version/VoiceInput.exe"
+      }
+    }
+  }
 }
