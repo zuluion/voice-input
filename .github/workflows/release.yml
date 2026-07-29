@@ -28,22 +28,22 @@ jobs:
         id: get_version
         shell: powershell
         run: |
-          $ver = (Get-Content VERSION).Trim()
-          echo "VERSION=$ver" >> $env:GITHUB_ENV
-          echo "Building version: $ver"
+          $ver = (Get-Content VERSION -Raw).Trim()
+          "VERSION=$ver" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          Write-Host "Building version: $ver"
 
           if (Test-Path CHANGELOG.md) {
               $content = Get-Content CHANGELOG.md -Raw
               $pattern = "(?ms)^##\s*\[$ver\].*?(?=^##\s*\[|\Z)"
               if ($content -match $pattern) {
                   $changelog = $Matches[0].Trim()
-                  $changelog | Set-Content RELEASE_CHANGELOG.md
-                  echo "Found changelog entry for version $ver"
+                  $changelog | Out-File -FilePath RELEASE_CHANGELOG.md -Encoding utf8
+                  Write-Host "Found changelog entry for version $ver"
               } else {
-                  "## Release v$ver`n`nAutomated release build for version $ver." | Set-Content RELEASE_CHANGELOG.md
+                  "## Release v$ver`n`nAutomated release build for version $ver." | Out-File -FilePath RELEASE_CHANGELOG.md -Encoding utf8
               }
           } else {
-              "## Release v$ver`n`nAutomated release build for version $ver." | Set-Content RELEASE_CHANGELOG.md
+              "## Release v$ver`n`nAutomated release build for version $ver." | Out-File -FilePath RELEASE_CHANGELOG.md -Encoding utf8
           }
 
       - name: Install dependencies
@@ -61,14 +61,14 @@ jobs:
         run: |
           $exePath = "dist/VoiceInput.exe"
           $hash = (Get-FileHash -Path $exePath -Algorithm SHA256).Hash.ToLower()
-          echo "EXE_HASH=$hash" >> $env:GITHUB_ENV
-          echo "SHA256: $hash"
+          "EXE_HASH=$hash" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          Write-Host "SHA256: $hash"
 
-          $json = Get-Content voice-input.json | ConvertFrom-Json
+          $json = Get-Content voice-input.json -Raw | ConvertFrom-Json
           $json.version = "$env:VERSION"
           $json.architecture.'64bit'.url = "https://github.com/zuluion/voice-input/releases/download/v$env:VERSION/VoiceInput.exe"
           $json.architecture.'64bit'.hash = "$hash"
-          $json | ConvertTo-Json -Depth 10 | Set-Content voice-input.json
+          $json | ConvertTo-Json -Depth 10 | Out-File -FilePath voice-input.json -Encoding utf8
 
       - name: Create GitHub Release with Changelog
         uses: softprops/action-gh-release@v2
@@ -76,7 +76,7 @@ jobs:
           tag_name: v${{ env.VERSION }}
           name: Voice Input v${{ env.VERSION }}
           body_path: RELEASE_CHANGELOG.md
-          generate_release_notes: true
+          generate_release_notes: false
           draft: false
           prerelease: false
           files: |
@@ -91,5 +91,10 @@ jobs:
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add voice-input.json
-          git commit -m "chore(release): update Scoop manifest for v$env:VERSION" || exit 0
-          git push origin HEAD:$env:GITHUB_REF_NAME
+          $status = git status --porcelain
+          if ($status) {
+              git commit -m "chore(release): update Scoop manifest for v$env:VERSION [skip ci]"
+              git push origin HEAD:$env:GITHUB_REF_NAME
+          } else {
+              Write-Host "No changes in voice-input.json to commit."
+          }
