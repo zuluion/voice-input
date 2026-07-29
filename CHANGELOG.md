@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2026.07.29.006] - 2026-07-29
+
+### 🚀 Packaging & Scoop
+- **Scoop Config Persistence**: Added `"persist": "config.json"` to `voice-input.json` Scoop manifest so user configurations (API keys, endpoints, prompts, hotkeys) are automatically preserved across `scoop update` application upgrades.
+
 ## [2026.07.29.005] - 2026-07-29
 
 ### 📝 Documentation
