@@ -14,6 +14,12 @@
 - **Commit 机制**：不主动执行 `git commit`，仅在用户明确提出提交要求时再进行 commit。
 - **范围变更**：若发现修改范围将超出当前任务描述，须先给出调整方案并征得同意。
 
+### Agent Pre-Commit Hook (Agent 提交前文档检查与更新机制)
+在 Agent 响应用户指令执行 `git commit` 或发布新版本之前，必须自动触发 Agent Pre-Commit Hook 检查：
+1. **文档关联变更判断**：检查所有暂存/修改的文件。若涉及核心代码 (`src/`)、架构逻辑或 UI 交互变更，判断是否需要同步更新相关文档。
+2. **自动一键同步更新**：若判断需要更新，Agent 须自动同步更新所有涉及的文档（包含但不限于 `AGENTS.md`、`README.md`、`docs/specs/speech_input_windows_spec.md`、`findings.md`、`task_plan.md` 及 `progress.md`）。
+3. **版本与 CHANGELOG 强制对齐**：若发生版本递增或新功能发布，Agent 须自动将 `VERSION` 文件递增，并在 `CHANGELOG.md` 中追加对应版本的变更树说明，确认无误后方可执行 `git commit` 提交。
+
 ## 4. Git 规范 (Git Standards)
 
 ### Commit Message 规范

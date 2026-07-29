@@ -26,14 +26,14 @@ jobs:
 
       - name: Read Version & Extract Changelog
         id: get_version
-        shell: powershell
+        shell: pwsh
         run: |
-          $ver = (Get-Content VERSION -Raw).Trim()
+          $ver = (Get-Content VERSION -Encoding utf8 -Raw).Trim()
           "VERSION=$ver" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           Write-Host "Building version: $ver"
 
           if (Test-Path CHANGELOG.md) {
-              $content = Get-Content CHANGELOG.md -Raw
+              $content = Get-Content CHANGELOG.md -Encoding utf8 -Raw
               $pattern = "(?ms)^##\s*\[$ver\].*?(?=^##\s*\[|\Z)"
               if ($content -match $pattern) {
                   $changelog = $Matches[0].Trim()
@@ -57,14 +57,14 @@ jobs:
           pyinstaller --noconsole --onefile --name "VoiceInput" --paths "." src/main.py
 
       - name: Compute SHA256 Hash & Update Scoop Manifest
-        shell: powershell
+        shell: pwsh
         run: |
           $exePath = "dist/VoiceInput.exe"
           $hash = (Get-FileHash -Path $exePath -Algorithm SHA256).Hash.ToLower()
           "EXE_HASH=$hash" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           Write-Host "SHA256: $hash"
 
-          $json = Get-Content voice-input.json -Raw | ConvertFrom-Json
+          $json = Get-Content voice-input.json -Encoding utf8 -Raw | ConvertFrom-Json
           $json.version = "$env:VERSION"
           $json.architecture.'64bit'.url = "https://github.com/zuluion/voice-input/releases/download/v$env:VERSION/VoiceInput.exe"
           $json.architecture.'64bit'.hash = "$hash"
@@ -86,7 +86,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Commit Updated Scoop Manifest
-        shell: powershell
+        shell: pwsh
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"

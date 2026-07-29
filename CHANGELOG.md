@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2026.07.29.004] - 2026-07-29
+
+### 🐛 Bug Fixes
+- **UTF-8 Emoji Encoding in Release Changelog**: Fixed corrupted emoji characters (`ðŸš€`, `ðŸ›`) in GitHub Release notes by switching workflow shell to `pwsh` (PowerShell 7) and explicitly enforcing `-Encoding utf8` on all `Get-Content` calls in `.github/workflows/release.yml`.
+
 ## [2026.07.29.003] - 2026-07-29
 
 ### 🚀 Features & UX
