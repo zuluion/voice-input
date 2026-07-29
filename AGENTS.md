@@ -53,3 +53,22 @@ type/YYYY-MM-DD_业务描述
 - **ASR 支持**：豆包 WebSocket, 通义千问 WebSocket, 小米 MiMo (`mimo-v2.5-asr`), OpenAI HTTP REST
 - **LLM 精修**：OpenAI API 兼容接口，保守纠错 System Prompt
 - **文本注入**：`win32clipboard` 备份/恢复 + Win32 `SendInput(Ctrl+V)` 模拟
+
+---
+
+## 6. 版本管理规范 (Versioning Standards)
+
+### 滚动式版本格式 (Rolling Versioning)
+项目采用**滚动式版本控制**，统一存放在项目根目录的 `VERSION` 文件中作为单源真实版本号 (Single Source of Truth)：
+
+```text
+YYYY.MM.DD.xxx
+```
+- **YYYY.MM.DD**：发布当日的公历日期（例如 `2026.07.29`）。
+- **xxx**：当日发布的递增序号，补足 3 位数字（例如 `001`, `002`）。
+- **示例**：`2026.07.29.001`
+
+### 自动发布与 Scoop 同步机制
+1. **单源版本变更**：在进行新功能或 Bug 修复发布前，须将根目录 `VERSION` 文件更新为最新的滚动版本号，并在 `CHANGELOG.md` 中同步追加对应版本的变更说明。
+2. **GitHub Actions 自动构建与 Release 说明**：每次提交 `git push` 后，GitHub Actions 自动化工作流会自动解析 `CHANGELOG.md` 中与 `VERSION` 匹配的变更说明，作为 Release Message 自动发布 GitHub Release，并附带 PyInstaller 构建的单文件可执行程序 `VoiceInput.exe`。
+3. **Scoop Manifest 自动更新**：发布流程会自动计算构建产物的 SHA-256 哈希值，更新根目录下的 `voice-input.json` Scoop 清单，确保支持 Scoop 包管理器的无缝自动升级 (`scoop update voice-input`)。

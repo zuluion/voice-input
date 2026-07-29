@@ -1,0 +1,95 @@
+name: Build & Release Executable
+
+on:
+  push:
+    branches:
+      - master
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Read Version & Extract Changelog
+        id: get_version
+        shell: powershell
+        run: |
+          $ver = (Get-Content VERSION).Trim()
+          echo "VERSION=$ver" >> $env:GITHUB_ENV
+          echo "Building version: $ver"
+
+          if (Test-Path CHANGELOG.md) {
+              $content = Get-Content CHANGELOG.md -Raw
+              $pattern = "(?ms)^##\s*\[$ver\].*?(?=^##\s*\[|\Z)"
+              if ($content -match $pattern) {
+                  $changelog = $Matches[0].Trim()
+                  $changelog | Set-Content RELEASE_CHANGELOG.md
+                  echo "Found changelog entry for version $ver"
+              } else {
+                  "## Release v$ver`n`nAutomated release build for version $ver." | Set-Content RELEASE_CHANGELOG.md
+              }
+          } else {
+              "## Release v$ver`n`nAutomated release build for version $ver." | Set-Content RELEASE_CHANGELOG.md
+          }
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Build Standalone Executable with PyInstaller
+        run: |
+          pyinstaller --noconsole --onefile --name "VoiceInput" src/main.py
+
+      - name: Compute SHA256 Hash & Update Scoop Manifest
+        shell: powershell
+        run: |
+          $exePath = "dist/VoiceInput.exe"
+          $hash = (Get-FileHash -Path $exePath -Algorithm SHA256).Hash.ToLower()
+          echo "EXE_HASH=$hash" >> $env:GITHUB_ENV
+          echo "SHA256: $hash"
+
+          $json = Get-Content voice-input.json | ConvertFrom-Json
+          $json.version = "$env:VERSION"
+          $json.architecture.'64bit'.url = "https://github.com/zuluion/voice-input/releases/download/v$env:VERSION/VoiceInput.exe"
+          $json.architecture.'64bit'.hash = "$hash"
+          $json | ConvertTo-Json -Depth 10 | Set-Content voice-input.json
+
+      - name: Create GitHub Release with Changelog
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ env.VERSION }}
+          name: Voice Input v${{ env.VERSION }}
+          body_path: RELEASE_CHANGELOG.md
+          generate_release_notes: true
+          draft: false
+          prerelease: false
+          files: |
+            dist/VoiceInput.exe
+            voice-input.json
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Commit Updated Scoop Manifest
+        shell: powershell
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add voice-input.json
+          git commit -m "chore(release): update Scoop manifest for v$env:VERSION" || exit 0
+          git push origin HEAD:$env:GITHUB_REF_NAME
