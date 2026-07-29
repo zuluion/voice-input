@@ -1,29 +1,29 @@
-{
-    "version": "2026.07.29.001",
-    "description": "Windows System Tray Voice Input App using PySide6, Multi-Provider ASR and LLM Refinement",
-    "homepage": "https://github.com/zuluion/voice-input",
-    "license": "MIT",
-    "architecture": {
-        "64bit": {
-            "url": "https://github.com/zuluion/voice-input/releases/download/v2026.07.29.001/VoiceInput.exe",
-            "hash": ""
-        }
-    },
-    "bin": "VoiceInput.exe",
-    "shortcuts": [
-        [
-            "VoiceInput.exe",
-            "Voice Input"
-        ]
-    ],
-    "checkver": {
-        "github": "https://github.com/zuluion/voice-input"
-    },
-    "autoupdate": {
-        "architecture": {
-            "64bit": {
-                "url": "https://github.com/zuluion/voice-input/releases/download/v$version/VoiceInput.exe"
-            }
-        }
-    }
+﻿{
+    "version":  "2026.07.29.002",
+    "description":  "Windows System Tray Voice Input App using PySide6, Multi-Provider ASR and LLM Refinement",
+    "homepage":  "https://github.com/zuluion/voice-input",
+    "license":  "MIT",
+    "architecture":  {
+                         "64bit":  {
+                                       "url":  "https://github.com/zuluion/voice-input/releases/download/v2026.07.29.002/VoiceInput.exe",
+                                       "hash":  "6835c1985a0729322426bfb3d675b906960300398fe85b20cd8313639af73004"
+                                   }
+                     },
+    "bin":  "VoiceInput.exe",
+    "shortcuts":  [
+                      [
+                          "VoiceInput.exe",
+                          "Voice Input"
+                      ]
+                  ],
+    "checkver":  {
+                     "github":  "https://github.com/zuluion/voice-input"
+                 },
+    "autoupdate":  {
+                       "architecture":  {
+                                            "64bit":  {
+                                                          "url":  "https://github.com/zuluion/voice-input/releases/download/v$version/VoiceInput.exe"
+                                                      }
+                                        }
+                   }
 }
