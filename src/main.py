@@ -2,8 +2,14 @@ import os
 import sys
 import threading
 
-# Ensure project root is in sys.path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+# Ensure project root & PyInstaller _MEIPASS are in sys.path
+if getattr(sys, 'frozen', False):
+    base_dir = getattr(sys, '_MEIPASS', os.path.abspath(os.path.dirname(__file__)))
+else:
+    base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+
+if base_dir not in sys.path:
+    sys.path.insert(0, base_dir)
 
 from PySide6.QtWidgets import QApplication, QMessageBox, QSystemTrayIcon
 from PySide6.QtCore import QObject, Signal, QThread

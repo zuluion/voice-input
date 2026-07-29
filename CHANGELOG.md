@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2026.07.29.002] - 2026-07-29
+
+### 🐛 Bug Fixes
+- **PyInstaller Frozen Bundle Module Import**: Fixed `ModuleNotFoundError: No module named 'src'` when launching standalone compiled `VoiceInput.exe` by supporting `sys._MEIPASS` path resolution in `src/main.py` and adding `--paths "."` to PyInstaller build flags.
+
 ## [2026.07.29.001] - 2026-07-29
 
 ### 🚀 Features
