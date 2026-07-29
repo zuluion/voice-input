@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2026.07.29.003] - 2026-07-29
+
+### 🚀 Features & UX
+- **Default Hotkey Update**: Changed default recommended trigger hotkey to `Right Control` (`Key.ctrl_r`) to avoid Windows system menu focus stealing issues caused by `Alt` keys.
+
+### 🐛 Bug Fixes
+- **Strict Hotkey Matching**: Refactored `_match_key()` in `src/core/hotkey.py` to strictly distinguish `Right Alt` (VK 165) from `Left Alt` (VK 164) and `Right Control` (VK 163) from `Left Control` (VK 162), preventing `Left Alt` from accidentally triggering recording when set to `Right Alt`.
+
 ## [2026.07.29.002] - 2026-07-29
 
 ### 🐛 Bug Fixes

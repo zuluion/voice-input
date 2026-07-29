@@ -9,7 +9,7 @@ DEFAULT_SYSTEM_PROMPT = """你是一个专业的语音输入文本精修与整�
 4. 输出要求：仅输出精修与整理后的最终文本，不要包含任何解释、前言或总结说明。"""
 
 DEFAULT_CONFIG: Dict[str, Any] = {
-    "hotkey": "Key.alt_r",
+    "hotkey": "Key.ctrl_r",
     "asr": {
         "provider": "xiaomi_mimo",
         "doubao": {

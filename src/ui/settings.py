@@ -66,7 +66,7 @@ def get_friendly_key_name(key_str: str) -> str:
 class HotkeyRecorderWidget(QFrame):
     hotkey_changed = Signal(str)
 
-    def __init__(self, initial_key: str = "Key.alt_r") -> None:
+    def __init__(self, initial_key: str = "Key.ctrl_r") -> None:
         super().__init__()
         self.current_key_str = initial_key
         self.is_recording = False
@@ -162,8 +162,8 @@ class HotkeyRecorderWidget(QFrame):
 
     def reset_default(self) -> None:
         self.stop_recording()
-        self.set_key("Key.alt_r")
-        self.hotkey_changed.emit("Key.alt_r")
+        self.set_key("Key.ctrl_r")
+        self.hotkey_changed.emit("Key.ctrl_r")
 
     def toggle_recording(self) -> None:
         if self.is_recording:
