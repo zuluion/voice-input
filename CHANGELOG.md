@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2026.07.30.001] - 2026-07-30
+
+### 🚀 LLM Refinement Prompt Enhancement
+- **Speech Self-Correction & Mid-Sentence Revision**: Upgraded default LLM System Prompt in `src/refine/llm.py`, `src/config.py`, and `docs/specs/speech_input_windows_spec.md` to intelligently handle spoken self-corrections (e.g., "A, wait, change to B", "xxx, then aaa, nevermind, bbb" -> "xxx, bbb"), preserving context while replacing discarded intent.
+
 ## [2026.07.29.007] - 2026-07-29
 
 ### 🐛 Bug Fixes & Scoop Persistence
