@@ -64,12 +64,12 @@ type/YYYY-MM-DD_业务描述
 ---
 
 ## 5. 项目架构与技术栈概览 (Project Stack)
-- **操作系统**：Windows 10 / 11 (Python 3.10+)
+- **操作系统与环境**：Windows 10 / 11 (支持 `uv` 包管理器与 `.python-version` 锁定 Python 3.12)
 - **UI 框架**：PySide6 (`Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.Tool`)
 - **音频引擎**：`sounddevice` + NumPy RMS 包络平滑
 - **热键引擎**：`pynput` / Win32 API 键盘监听
 - **ASR 支持**：豆包 WebSocket, 通义千问 WebSocket, 小米 MiMo (`mimo-v2.5-asr`), OpenAI HTTP REST
-- **LLM 精修**：OpenAI API 兼容接口，保守纠错 System Prompt
+- **LLM 精修**：OpenAI / Local GGUF / DeepSeek / Qwen / Xiaomi / Ollama 7 大供应商，保守纠错 System Prompt
 - **文本注入**：`win32clipboard` 备份/恢复 + Win32 `SendInput(Ctrl+V)` 模拟
 
 ---

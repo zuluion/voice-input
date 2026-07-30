@@ -21,7 +21,8 @@
   - **`Preparing...`**：琥珀黄缓冲扫频脉冲。
   - **`Listening...`**：亮白文字 + 🔴 高亮发光呼吸 REC 红灯 + 5-Bar 动态音量波形（无声间隙保持微弱呼吸扫频）。
   - **`Refining...`**：紫色柔和退场。
-- **智能 LLM 文本精修、口误中途改口覆盖与口语清洗 (Refinement)**：支持 **6 大 LLM 供应商模式**（OpenAI, DeepSeek, Xiaomi, 阿里云通义千问, 本地 Ollama, Custom 自定义）。不仅修复谐音与术语，更可自动识别“不对”、“算了”、“改成”等改口信号并替换废弃表达。
+- **智能 LLM 文本精修、口误中途改口覆盖与口语清洗 (Refinement)**：支持 **7 大 LLM 供应商模式**（OpenAI, DeepSeek, Xiaomi, 阿里云通义千问, 本地 Ollama, Custom 自定义, 本地免编译 GGUF）。不仅修复谐音与术语，更可自动识别“不对”、“算了”、“改成”等改口信号并替换废弃表达，本地模式通过免 C++ 编译的独立 Ollama 引擎（`~/.voiceinput/bin/ollama.exe`）托管。
+- **单源真实版本控制与透明矢量 Icon 整合**：以根目录 `VERSION` 文件作为 Single Source of Truth，系统托盘、任务栏 AppUserModelID、关于窗口全量绑定统一高质感透明背景 Logo (`assets/logo.png`)。
 - **WebDAV 供应商模式、全量配置同步与最多 5 个备份循环清理**：支持坚果云与自定义 WebDAV 供应商，远端目录简化为保存路径（如 `/VoiceInput`），自动为上传历史生成年月日时间戳后缀（如 `config_20260730_101629.json`），并在超过 5 个备份时自动物理删除最旧的历史文件。
 - **全局网络代理支持 (HTTP / SOCKS4 / SOCKS5)**：支持一键开关代理、配置主机名（默认提示 `127.0.0.1`）与端口号（默认提示 `7890`），全量注入环境变量驱动 API、WebSocket 与网络请求走代理。
 - **带时间戳调试日志模式 (Debug Logging Mode)**：提供独立 `🐞 Debug` 调试设置页，开启时在本地 `logs/voice_input_YYYYMMDD.log` 生成带有毫秒级时间戳及 `[VIA PROXY: ...]` 路由标签的 ASR/LLM 明文日志，关闭时全流程零磁盘日志以保护隐私。

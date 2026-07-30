@@ -6,8 +6,11 @@ from PySide6.QtWidgets import (
     QCheckBox, QPlainTextEdit, QMessageBox, QProgressDialog
 )
 from src.i18n import i18n
-from src.refine.llm import LLMRefiner, DEFAULT_SYSTEM_PROMPT
-from src.utils.model_downloader import PRESET_MODELS, is_model_downloaded, download_model, delete_model, get_model_file_path
+from src.refine.llm import LLMRefiner, DEFAULT_SYSTEM_PROMPT, DEFAULT_LOCAL_SYSTEM_PROMPT
+from src.utils.model_downloader import (
+    PRESET_MODELS, is_model_downloaded, download_model, delete_model,
+    is_ollama_installed, install_ollama_engine
+)
 
 LLM_PROVIDER_DEFAULTS = {
     "openai": {
@@ -39,6 +42,21 @@ LLM_PROVIDER_DEFAULTS = {
         "model": "gpt-4o-mini"
     }
 }
+
+class FrameworkInstallThread(QThread):
+    progress_signal = Signal(int, str)
+    finished_signal = Signal(bool, str)
+
+    def run(self):
+        from src.utils.model_downloader import install_ollama_engine
+        
+        def cb(downloaded, total, percent):
+            d_mb = downloaded / (1024 * 1024)
+            t_mb = total / (1024 * 1024)
+            self.progress_signal.emit(percent, f"Downloading Ollama Standalone Engine... {percent}% ({d_mb:.1f}MB / {t_mb:.1f}MB)")
+
+        ok, msg = install_ollama_engine(progress_callback=cb)
+        self.finished_signal.emit(ok, msg)
 
 class ModelDownloadThread(QThread):
     progress_signal = Signal(int, int, int)
@@ -112,10 +130,19 @@ class LLMSettingsTab(QWidget):
         self.lbl_local_status_val.setStyleSheet("font-weight: bold;")
         layout.addRow(self.lbl_local_status_title, self.lbl_local_status_val)
 
+        self.lbl_local_fw_title = QLabel(i18n.t("lbl_local_framework_status"))
+        self.lbl_local_fw_val = QLabel()
+        self.lbl_local_fw_val.setStyleSheet("font-weight: bold;")
+        layout.addRow(self.lbl_local_fw_title, self.lbl_local_fw_val)
+
         local_btn_layout = QHBoxLayout()
         self.download_model_btn = QPushButton(i18n.t("btn_download_local_model"))
         self.download_model_btn.clicked.connect(self._download_local_model)
         local_btn_layout.addWidget(self.download_model_btn)
+
+        self.install_fw_btn = QPushButton(i18n.t("btn_install_framework"))
+        self.install_fw_btn.clicked.connect(self._install_framework)
+        local_btn_layout.addWidget(self.install_fw_btn)
 
         self.delete_model_btn = QPushButton(i18n.t("btn_delete_local_model"))
         self.delete_model_btn.setStyleSheet("color: #ef4444;")
@@ -163,7 +190,10 @@ class LLMSettingsTab(QWidget):
 
         self.lbl_local_status_title.setVisible(is_local)
         self.lbl_local_status_val.setVisible(is_local)
+        self.lbl_local_fw_title.setVisible(is_local)
+        self.lbl_local_fw_val.setVisible(is_local)
         self.download_model_btn.setVisible(is_local)
+        self.install_fw_btn.setVisible(is_local)
         self.delete_model_btn.setVisible(is_local)
 
         defaults = LLM_PROVIDER_DEFAULTS.get(provider, LLM_PROVIDER_DEFAULTS["openai"])
@@ -172,9 +202,15 @@ class LLMSettingsTab(QWidget):
         saved_url = saved_provider_cfg.get("base_url", "")
         saved_model = saved_provider_cfg.get("model", "")
         saved_key = saved_provider_cfg.get("api_key", "")
+        saved_prompt = saved_provider_cfg.get("system_prompt", "").strip()
+        global_prompt = self.config_manager.get("llm", "system_prompt", default="").strip()
 
         self.llm_url_input.setText(saved_url if saved_url else defaults["base_url"])
         self.llm_key_input.setText(saved_key)
+
+        default_p = DEFAULT_LOCAL_SYSTEM_PROMPT if is_local else DEFAULT_SYSTEM_PROMPT
+        active_prompt = saved_prompt or (global_prompt if not is_local else "") or default_p
+        self.prompt_edit.setPlainText(active_prompt)
 
         model_val = saved_model if saved_model else defaults["model"]
         self.llm_model_combo.clear()
@@ -198,23 +234,85 @@ class LLMSettingsTab(QWidget):
 
     def _update_local_model_status(self) -> None:
         model_id = self.llm_model_combo.currentText().strip()
-        if not model_id:
+        """统一更新本地模型与 Ollama 引擎的状态图标与按钮 display"""
+        from src.utils.model_downloader import is_model_downloaded, is_ollama_installed
+
+        model_id = ""
+        if hasattr(self, 'llm_model_combo') and self.llm_model_combo:
+            model_id = self.llm_model_combo.currentText().strip()
+        if not model_id and hasattr(self, 'local_model_combo') and self.local_model_combo:
+            model_id = self.local_model_combo.currentData() or ""
+
+        downloaded = is_model_downloaded(model_id) if model_id else False
+
+        status_text = i18n.t("local_model_ready") if downloaded else i18n.t("local_model_missing")
+        status_color = "#10b981" if downloaded else "#ef4444"
+
+        if hasattr(self, 'local_model_status_val'):
+            self.local_model_status_val.setText(status_text)
+            self.local_model_status_val.setStyleSheet(f"color: {status_color}; font-weight: bold;")
+        if hasattr(self, 'lbl_local_status_val'):
+            self.lbl_local_status_val.setText(status_text)
+            self.lbl_local_status_val.setStyleSheet(f"color: {status_color}; font-weight: bold;")
+
+        if hasattr(self, 'download_model_btn'):
+            self.download_model_btn.setEnabled(not downloaded)
+        if hasattr(self, 'delete_model_btn'):
+            self.delete_model_btn.setEnabled(downloaded)
+
+        # 刷新 Engine 引擎就绪状态
+        engine_ready = is_ollama_installed()
+        fw_text = i18n.t("local_framework_installed") if engine_ready else i18n.t("local_framework_missing")
+        fw_color = "#10b981" if engine_ready else "#f59e0b"
+
+        if hasattr(self, 'local_framework_status_val'):
+            self.local_framework_status_val.setText(fw_text)
+            self.local_framework_status_val.setStyleSheet(f"color: {fw_color}; font-weight: bold;")
+        if hasattr(self, 'lbl_local_fw_val'):
+            self.lbl_local_fw_val.setText(fw_text)
+            self.lbl_local_fw_val.setStyleSheet(f"color: {fw_color}; font-weight: bold;")
+
+        if hasattr(self, 'install_framework_btn'):
+            self.install_framework_btn.setVisible(not engine_ready)
+        if hasattr(self, 'install_fw_btn'):
+            self.install_fw_btn.setVisible(not engine_ready)
+
+    def _install_framework(self) -> None:
+        """自动下载并配置免编译 Ollama 引擎"""
+        reply = QMessageBox.question(
+            self,
+            i18n.t("confirm_install_framework_title"),
+            i18n.t("confirm_install_framework_msg"),
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.Yes
+        )
+        if reply != QMessageBox.Yes:
             return
 
-        downloaded = is_model_downloaded(model_id)
-        if downloaded:
-            fpath = get_model_file_path(model_id)
-            self.lbl_local_status_val.setText(i18n.t("local_model_ready"))
-            self.lbl_local_status_val.setStyleSheet("color: #10b981; font-weight: bold;")
-            self.download_model_btn.setEnabled(False)
-            self.delete_model_btn.setEnabled(True)
+        self.progress_dialog = QProgressDialog("Downloading Ollama Engine...", "Cancel", 0, 100, self)
+        self.progress_dialog.setWindowTitle(i18n.t("confirm_install_framework_title"))
+        self.progress_dialog.setWindowModality(Qt.WindowModal)
+        self.progress_dialog.setMinimumDuration(0)
+        self.progress_dialog.setValue(0)
+
+        self.install_thread = FrameworkInstallThread()
+        self.install_thread.progress_signal.connect(self._on_install_progress)
+        self.install_thread.finished_signal.connect(self._on_framework_installed)
+        self.install_thread.start()
+
+    def _on_install_progress(self, percent: int, label_text: str):
+        if hasattr(self, 'progress_dialog') and self.progress_dialog:
+            self.progress_dialog.setValue(percent)
+            self.progress_dialog.setLabelText(label_text)
+
+    def _on_framework_installed(self, ok: bool, msg: str) -> None:
+        if hasattr(self, 'progress_dialog') and self.progress_dialog:
+            self.progress_dialog.close()
+        self._update_local_model_status()
+        if ok:
+            QMessageBox.information(self, "Success", "Ollama engine installed successfully! (~/.voiceinput/bin/)")
         else:
-            info = PRESET_MODELS.get(model_id, {})
-            sz = info.get("size_str", "Unknown")
-            self.lbl_local_status_val.setText(f"{i18n.t('local_model_missing')} ({sz})")
-            self.lbl_local_status_val.setStyleSheet("color: #f59e0b; font-weight: bold;")
-            self.download_model_btn.setEnabled(True)
-            self.delete_model_btn.setEnabled(False)
+            QMessageBox.critical(self, "Error", f"Failed to install Ollama engine:\n{msg}")
 
     def _download_local_model(self) -> None:
         model_id = self.llm_model_combo.currentText().strip()
@@ -295,7 +393,9 @@ class LLMSettingsTab(QWidget):
         self.lbl_model_name.setText(i18n.t("lbl_model_name"))
         self.fetch_llm_btn.setText(i18n.t("btn_fetch_models"))
         self.lbl_local_status_title.setText(i18n.t("lbl_local_model_status"))
+        self.lbl_local_fw_title.setText(i18n.t("lbl_local_framework_status"))
         self.download_model_btn.setText(i18n.t("btn_download_local_model"))
+        self.install_fw_btn.setText(i18n.t("btn_install_framework"))
         self.delete_model_btn.setText(i18n.t("btn_delete_local_model"))
         self.prompt_label.setText(i18n.t("llm_system_prompt"))
         self.reset_prompt_btn.setText(i18n.t("btn_reset_prompt"))
@@ -326,13 +426,21 @@ class LLMSettingsTab(QWidget):
         if provider not in cfg["llm"]:
             cfg["llm"][provider] = {}
 
+        prompt_text = self.prompt_edit.toPlainText().strip()
         cfg["llm"][provider]["api_key"] = self.llm_key_input.text().strip()
         cfg["llm"][provider]["base_url"] = self.llm_url_input.text().strip()
         cfg["llm"][provider]["model"] = self.llm_model_combo.currentText().strip()
-        cfg["llm"]["system_prompt"] = self.prompt_edit.toPlainText().strip()
+        cfg["llm"][provider]["system_prompt"] = prompt_text
+        
+        if provider != "local":
+            cfg["llm"]["system_prompt"] = prompt_text
 
     def _reset_prompt(self) -> None:
-        self.prompt_edit.setPlainText(DEFAULT_SYSTEM_PROMPT)
+        provider = self.llm_provider_combo.currentText()
+        if provider == "local":
+            self.prompt_edit.setPlainText(DEFAULT_LOCAL_SYSTEM_PROMPT)
+        else:
+            self.prompt_edit.setPlainText(DEFAULT_SYSTEM_PROMPT)
 
     def _fetch_models(self) -> None:
         url = self.llm_url_input.text().strip()

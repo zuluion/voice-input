@@ -74,7 +74,8 @@ DEFAULT_CONFIG: Dict[str, Any] = {
             "model": "qwen2.5:7b"
         },
         "local": {
-            "model": "qwen2.5-0.5b-instruct"
+            "model": "qwen2.5:1.5b",
+            "system_prompt": ""
         },
         "custom": {
             "api_key": "",

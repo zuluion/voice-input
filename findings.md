@@ -1,16 +1,14 @@
 # Findings - Technical Analysis & Insights
 
-## 1. WebDAV Path Issue Analysis
-- **当前逻辑分析**：`WebDAVSync._get_url_for_path(rel_path)` 使用 `f"{self.server_url}/{clean_rel}"` 拼接。如果 `server_url` 中包含如 `/dav/` 或 `/remote.php/webdav/` 等路径，`server_url.rstrip("/")` 会保留路径，但若 `rel_path` 带有前导斜杠或包含 `remote_dir` 重复，可能导致 URL 层级错误或 404。
-- **本地存储问题**：在 `download_config` 中，若 `local_config_path` 对应目录尚未创建，写入时抛出 `FileNotFoundError`（现已在 `download_config` 中添加 `os.makedirs`，但需要增强层级检查与远端路径正确性解析）。
+## 1. WebDAV Path Resolution Analysis
+- **URL 拼接修复**：`WebDAVSync._get_url_for_path(rel_path)` refactored using `urllib.parse` to correctly preserve subpaths (e.g. `/dav/` or `/remote.php/webdav/`) without redundant `/` nesting.
+- **Auto Directory Creation**: Automatically creates target local folders before saving downloaded WebDAV configuration.
 
-## 2. Dynamic Version Loading Analysis
-- **当前机制**：`about_tab.py` 内部简单打开当前工作目录下的相对路径 `"VERSION"`。在打包后或程序在子目录运行时无法唯一定位项目根目录的 `VERSION` 文件。
-- **改善措施**：实现 `src/utils/version.py`，组合使用 `sys._MEIPASS`（PyInstaller 打包环境）、`os.path.dirname(__file__)` 向上溯源及读取备选，提供统一 API `get_app_version()`。
+## 2. Dynamic Version & Logo Single Source Analysis
+- **Single Source of Truth**: Created `src/utils/version.py` (`get_app_version()`, `get_logo_path()`) supporting PyInstaller `_MEIPASS` and dynamic root resolution.
+- **Icon Uniformity**: All windows, taskbar AppUserModelID (`Zuluion.VoiceInput.App.1`), system tray, and about tab render transparent background SVG-generated PNG (`assets/logo.png`).
 
-## 3. Local Model Architecture Analysis
-- **存储位置**：`os.path.expanduser("~/.voiceinput/models")`
-- **预设模型列表**：
-  1. `Qwen2.5-0.5B-Instruct-GGUF` (文件: `qwen2.5-0.5b-instruct-q4_k_m.gguf`, 大小: ~398 MB)
-  2. `Qwen2.5-1.5B-Instruct-GGUF` (文件: `qwen2.5-1.5b-instruct-q4_k_m.gguf`, 大小: ~986 MB)
-- **下载与代理**：调用 `src/utils/proxy.py` 的代理配置，网络请求通过 `requests` 流式下载（`stream=True`），带有字节数统计与进度更新。
+## 3. Standalone Ollama Local Engine Architecture
+- **Zero-Compiler Migration**: Eliminated `llama-cpp-python` and Visual Studio C++ / CMake requirements on Windows. Local models run via a standalone, zero-dependency Ollama binary (`~/.voiceinput/bin/ollama.exe`).
+- **Provider-Decoupled System Prompts**: `LLMRefiner` supports per-provider system prompts (`DEFAULT_LOCAL_SYSTEM_PROMPT`). Local mode enforces unedited context preservation, prohibits prompt example leakage, and strips artificial outer quotes (`""`, `“”`).
+- **Linked Process Lifecycle**: Background Ollama processes are automatically shut down upon VoiceInput exit via `QApplication.aboutToQuit` to free system RAM and CPU.

@@ -23,6 +23,7 @@ from src.refine.llm import LLMRefiner
 from src.utils.injector import TextInjector
 from src.utils.proxy import apply_proxy_config
 from src.utils.webdav import WebDAVSync
+from src.utils.model_downloader import stop_ollama_server
 from src.utils.logger import logger
 from src.ui.capsule import FloatingCapsule
 from src.ui.tray import SystemTrayApp
@@ -206,6 +207,7 @@ class VoiceInputController(QObject):
 
     def _quit_app(self) -> None:
         self.hotkey_listener.stop()
+        stop_ollama_server()
         QApplication.quit()
 
 import ctypes
@@ -221,6 +223,7 @@ except Exception:
 def main() -> None:
     app = QApplication(sys.argv)
     app.setQuitOnLastWindowClosed(False)
+    app.aboutToQuit.connect(stop_ollama_server)
 
     logo_path = get_logo_path()
     if logo_path and os.path.exists(logo_path):

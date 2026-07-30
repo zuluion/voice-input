@@ -2,6 +2,33 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2026.07.30.016] - 2026-07-30
+
+### 🚀 Zero-Compiler Local Engine, Decoupled Prompts & Final Polish
+- **Stand-alone Zero-Build Engine**: Successfully migrated local LLM execution to a standalone Ollama binary (`~/.voiceinput/bin/ollama.exe`), completely fixing Python 3.14 and Windows C++ compiler errors.
+- **Provider-Decoupled System Prompts**: Introduced `DEFAULT_LOCAL_SYSTEM_PROMPT` for local models with UI real-time prompt sync, ensuring unedited context retention and prohibiting artificial outer quote wrappers (`""`).
+- **Model Preset Refinement**: Standardized on `Qwen2.5-1.5B` and `Qwen2.5-3B`, removing low-quality 0.5B model.
+- **Linked Engine Lifecycle Teardown**: Automatically shuts down background Ollama processes on application exit to free system RAM and CPU.
+
+## [2026.07.30.015] - 2026-07-30
+
+### 🚀 Standalone Ollama Local LLM Engine & Prompt Optimization
+- **Zero-Build Ollama Migration**: Replaced complex `llama-cpp-python` compilation with a 100% standalone, zero-compiler Ollama binary engine (`~/.voiceinput/bin/ollama.exe`), fixing Python 3.14/Windows C++ compiler errors completely.
+- **Provider-Decoupled System Prompts**: Introduced provider-specific System Prompts (`DEFAULT_LOCAL_SYSTEM_PROMPT`) with UI sync, preserving full unedited context, preventing prompt example leaks, and prohibiting artificial quote wrappers.
+- **Linked Engine Lifecycle Teardown**: Automatically shuts down background Ollama processes on application exit to save CPU and RAM.
+
+## [2026.07.30.014] - 2026-07-30
+
+### ⚡ Standardized uv Package Management Workflow
+- **Pinned Python Version (.python-version)**: Added `.python-version` locking project runtime to Python 3.12, enabling seamless Wheel downloads without requiring local C++ compilation tools.
+- **Modern uv Workflow Guide**: Updated `README.md` with official `uv` installation and environment setup instructions (`uv venv`, `uv pip install`, `uv run`).
+
+## [2026.07.30.013] - 2026-07-30
+
+### ⚡ Auto Local Inference Engine Installer (llama-cpp-python)
+- **Automatic Framework Detection & One-Click Installer**: Added `is_llama_cpp_installed()` and `install_llama_cpp()` in `src/utils/model_downloader.py`. Automatically detects if the GGUF C/C++ inference binding library `llama-cpp-python` is present in the Python runtime.
+- **Interactive UI Framework Installation**: Added `⚡ 自动安装推理依赖` (Auto Install Engine) button and status label in `LLMSettingsTab`. Automatically prompts user with confirmation dialogs to perform a background async `pip install` when using or downloading local models without requiring manual command-line execution.
+
 ## [2026.07.30.012] - 2026-07-30
 
 ### 🤖 Local LLM Provider, WebDAV Path Precision, Logo & Dynamic Versioning

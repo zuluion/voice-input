@@ -39,7 +39,20 @@ scoop install https://raw.githubusercontent.com/zuluion/voice-input/master/voice
 scoop update voice-input
 ```
 
-### 2. 源码开发环境运行
+### 2. 使用 uv 极速管理与运行（推荐 ⚡）
+项目根目录内置 `.python-version` (锁死 Python 3.12)，通过 `uv` 即可无视宿主系统 Python 版本，100% 免编译直接使用预编译 Wheel：
+```powershell
+# 1. 自动下载 Python 3.12 解释器并创建隔离虚拟环境
+uv venv
+
+# 2. 一键秒级安装依赖与本地 GGUF 模型推理引擎 (llama-cpp-python)
+uv pip install -r requirements.txt llama-cpp-python -i https://pypi.tuna.tsinghua.edu.cn/simple
+
+# 3. 运行主程序
+uv run python src/main.py
+```
+
+### 3. 传统 pip 源码运行
 ```powershell
 # 安装依赖
 pip install -r requirements.txt
