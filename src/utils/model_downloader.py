@@ -116,25 +116,96 @@ def install_ollama_engine(progress_callback=None) -> tuple[bool, str]:
         return False, f"Extraction failed: {str(extract_err)}"
 
 _OLLAMA_PROCESS = None
+_OLLAMA_JOB_HANDLE = None
+
+def _create_win32_job_object():
+    """创建一个系统级的 Windows Job Object，确保 VoiceInput 退出时其调起的所有子孙进程自动强杀"""
+    if os.name != 'nt':
+        return None
+    try:
+        import ctypes
+        from ctypes import wintypes
+
+        kernel32 = ctypes.windll.kernel32
+        job = kernel32.CreateJobObjectW(None, None)
+        if not job:
+            return None
+
+        class JOBOBJECT_BASIC_LIMIT_INFORMATION(ctypes.Structure):
+            _fields_ = [
+                ('PerProcessUserTimeLimit', wintypes.LARGE_INTEGER),
+                ('PerJobUserTimeLimit', wintypes.LARGE_INTEGER),
+                ('LimitFlags', wintypes.DWORD),
+                ('MinimumWorkingSetSize', ctypes.c_size_t),
+                ('MaximumWorkingSetSize', ctypes.c_size_t),
+                ('ActiveProcessLimit', wintypes.DWORD),
+                ('Affinity', ctypes.c_size_t),
+                ('PriorityClass', wintypes.DWORD),
+                ('SchedulingClass', wintypes.DWORD),
+            ]
+
+        class IO_COUNTERS(ctypes.Structure):
+            _fields_ = [
+                ('ReadOperationCount', ctypes.c_ulonglong),
+                ('WriteOperationCount', ctypes.c_ulonglong),
+                ('OtherOperationCount', ctypes.c_ulonglong),
+                ('ReadTransferCount', ctypes.c_ulonglong),
+                ('WriteTransferCount', ctypes.c_ulonglong),
+                ('OtherTransferCount', ctypes.c_ulonglong),
+            ]
+
+        class JOBOBJECT_EXTENDED_LIMIT_INFORMATION(ctypes.Structure):
+            _fields_ = [
+                ('BasicLimitInformation', JOBOBJECT_BASIC_LIMIT_INFORMATION),
+                ('IoInfo', IO_COUNTERS),
+                ('ProcessMemoryLimit', ctypes.c_size_t),
+                ('JobMemoryLimit', ctypes.c_size_t),
+                ('PeakProcessMemoryUsed', ctypes.c_size_t),
+                ('PeakJobMemoryUsed', ctypes.c_size_t),
+            ]
+
+        info = JOBOBJECT_EXTENDED_LIMIT_INFORMATION()
+        JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE = 0x2000
+        info.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE
+
+        JobObjectExtendedLimitInformation = 9
+        res = kernel32.SetInformationJobObject(
+            job,
+            JobObjectExtendedLimitInformation,
+            ctypes.byref(info),
+            ctypes.sizeof(info)
+        )
+        if res:
+            return job
+    except Exception as e:
+        logger.log("OllamaServer", f"Failed to create Win32 Job Object: {e}")
+    return None
 
 def stop_ollama_server():
-    """退出应用时联动关闭由 VoiceInput 启动的 Ollama 后台服务进程"""
-    global _OLLAMA_PROCESS
-    if _OLLAMA_PROCESS and _OLLAMA_PROCESS.poll() is None:
-        logger.log("OllamaServer", "Linked shutdown: Terminating background Ollama server...")
+    """退出应用时联动关闭由 VoiceInput 启动的 Ollama 及其派生的子/孙进程树 (如 ollama_llama_server.exe)"""
+    global _OLLAMA_PROCESS, _OLLAMA_JOB_HANDLE
+    logger.log("OllamaServer", "Linked shutdown: Terminating background Ollama server & process tree...")
+    
+    if _OLLAMA_PROCESS:
         try:
             _OLLAMA_PROCESS.terminate()
-            _OLLAMA_PROCESS.wait(timeout=2)
         except Exception:
-            try:
-                _OLLAMA_PROCESS.kill()
-            except Exception:
-                pass
+            pass
         _OLLAMA_PROCESS = None
+
+    if os.name == 'nt':
+        try:
+            # 使用 taskkill /F /T 树状终止所有 ollama.exe 与 ollama_llama_server.exe 进程
+            subprocess.run(["taskkill", "/F", "/T", "/IM", "ollama.exe"], capture_output=True)
+            subprocess.run(["taskkill", "/F", "/T", "/IM", "ollama_llama_server.exe"], capture_output=True)
+        except Exception:
+            pass
+
+    _OLLAMA_JOB_HANDLE = None
 
 def ensure_ollama_server_running() -> bool:
     """确保后台 Ollama 服务在 http://127.0.0.1:11434 启动运行"""
-    global _OLLAMA_PROCESS
+    global _OLLAMA_PROCESS, _OLLAMA_JOB_HANDLE
     # 1. 尝试请求健康检查接口
     try:
         r = requests.get("http://127.0.0.1:11434/api/version", timeout=1.5)
@@ -164,6 +235,18 @@ def ensure_ollama_server_running() -> bool:
             startupinfo=startupinfo,
             creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
         )
+
+        # 在 Windows 上将新创建的进程挂载至 Job Object，确保同生共死
+        if os.name == 'nt':
+            _OLLAMA_JOB_HANDLE = _create_win32_job_object()
+            if _OLLAMA_JOB_HANDLE and _OLLAMA_PROCESS:
+                try:
+                    import ctypes
+                    kernel32 = ctypes.windll.kernel32
+                    kernel32.AssignProcessToJobObject(_OLLAMA_JOB_HANDLE, int(_OLLAMA_PROCESS._handle))
+                except Exception as job_err:
+                    logger.log("OllamaServer", f"Failed to assign process to job: {job_err}")
+
         import time
         time.sleep(2)
 
@@ -174,10 +257,12 @@ def ensure_ollama_server_running() -> bool:
         return False
 
 def is_model_downloaded(model_id: str) -> bool:
-    """检查指定的 Ollama 模型是否已下载"""
+    """检查指定的 Ollama 模型是否已下载 (结合在线 API 与本地物理磁盘双重检测)"""
     tag = PRESET_MODELS.get(model_id, {}).get("ollama_tag", model_id)
+    
+    # 1. 尝试在线 API 检测
     try:
-        r = requests.get("http://127.0.0.1:11434/api/tags", timeout=2)
+        r = requests.get("http://127.0.0.1:11434/api/tags", timeout=1.5)
         if r.status_code == 200:
             models = r.json().get("models", [])
             for m in models:
@@ -186,6 +271,21 @@ def is_model_downloaded(model_id: str) -> bool:
                     return True
     except Exception:
         pass
+
+    # 2. 若 API 尚未连通/响应，离线检查本地物理磁盘 ~/.voiceinput/models/manifests/ 目录
+    try:
+        parts = tag.split(":")
+        model_name = parts[0]
+        model_ver = parts[1] if len(parts) > 1 else "latest"
+        
+        manifest_path = os.path.expanduser(os.path.join(
+            "~", ".voiceinput", "models", "manifests", "registry.ollama.ai", "library", model_name, model_ver
+        ))
+        if os.path.exists(manifest_path) and os.path.getsize(manifest_path) > 0:
+            return True
+    except Exception:
+        pass
+
     return False
 
 def download_model(model_id: str, progress_callback=None, cancel_checker=None) -> tuple[bool, str]:

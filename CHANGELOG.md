@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2026.07.30.018] - 2026-07-30
+
+### 🛡️ Offline Model Detection & Win32 Job Process Tree Teardown
+- **Offline Disk Model Probe**: Enhanced `is_model_downloaded` with offline manifest inspection (`~/.voiceinput/models/manifests/`), ensuring instant model status detection on application startup even when Ollama HTTP service is silent.
+- **Win32 Job Object & Tree Teardown**: Bound Ollama process to Win32 Job Object (`JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE`) and added `taskkill /F /T` for `ollama.exe` and `ollama_llama_server.exe` tree termination, completely preventing orphan background processes.
+
 ## [2026.07.30.017] - 2026-07-30
 
 ### 🛠️ CI/CD Release Build Fix
