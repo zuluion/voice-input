@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2026.07.30.007] - 2026-07-30
+
+### 🌐 i18n Internationalization & Auto System Language
+- **i18n Multi-Language Engine**: Added `src/i18n.py` supporting English (`en_US`) and Simplified Chinese (`zh_CN`).
+- **Auto OS Language Detection**: Automatically detects Windows OS system locale (`QLocale.system().name()`), defaulting to Simplified Chinese on Chinese systems and English on international systems.
+- **Language Switcher UI**: Added Language selector (`Auto`, `简体中文`, `English`) in Hotkey & General Settings Tab.
+- **UI Localization**: Fully localized Settings window, Floating Capsule, and System Tray Menu items.
+
 ## [2026.07.30.006] - 2026-07-30
 
 ### 🚀 Debug Logging & Proxy Visibility

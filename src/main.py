@@ -14,6 +14,7 @@ if base_dir not in sys.path:
 from PySide6.QtWidgets import QApplication, QMessageBox, QSystemTrayIcon
 from PySide6.QtCore import QObject, Signal, QThread
 
+from src.i18n import i18n
 from src.config import ConfigManager
 from src.core.hotkey import HotkeyListener
 from src.audio.recorder import AudioRecorder
@@ -47,7 +48,7 @@ class ASRProcessingWorker(QThread):
             self.processing_finished.emit("")
             return
 
-        self.status_changed.emit("Refining...")
+        self.status_changed.emit(i18n.t("capsule_refining"))
         refined_text = self.llm_refiner.refine(raw_text)
         logger.log("LLM Output", f"Refined Text: '{refined_text}'")
         self.processing_finished.emit(refined_text)
@@ -56,6 +57,10 @@ class VoiceInputController(QObject):
     def __init__(self) -> None:
         super().__init__()
         self.config_manager = ConfigManager()
+
+        # Initialize i18n Language
+        lang_setting = self.config_manager.get("language", default="auto")
+        i18n.set_language(lang_setting)
 
         # Configure Debug Logger
         logger.configure(self.config_manager.get("debug", default={}), self.config_manager.config_path)
@@ -103,6 +108,7 @@ class VoiceInputController(QObject):
         if ok:
             logger.log("Main", "WebDAV Auto-sync succeeded! Reloading config...")
             self.config_manager.config = self.config_manager.load_config()
+            i18n.set_language(self.config_manager.get("language", default="auto"))
             apply_proxy_config(self.config_manager.get("proxy", default={}))
             logger.configure(self.config_manager.get("debug", default={}), self.config_manager.config_path)
         else:
@@ -183,6 +189,9 @@ class VoiceInputController(QObject):
         self.settings_window.raise_()
 
     def _on_config_saved(self) -> None:
+        new_lang = self.config_manager.get("language", default="auto")
+        i18n.set_language(new_lang)
+
         new_hotkey = self.config_manager.get("hotkey", default="Key.ctrl_r")
         self.hotkey_listener.set_target_key(new_hotkey)
         self.llm_refiner = LLMRefiner(self.config_manager.get("llm", default={}))

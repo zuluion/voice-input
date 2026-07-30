@@ -4,6 +4,7 @@ from PySide6.QtWidgets import (
     QMainWindow, QTabWidget, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QMessageBox
 )
 
+from src.i18n import i18n
 from src.ui.settings.asr_tab import ASRSettingsTab
 from src.ui.settings.llm_tab import LLMSettingsTab
 from src.ui.settings.webdav_tab import WebDAVSettingsTab
@@ -125,8 +126,8 @@ class SettingsWindow(QMainWindow):
     def __init__(self, config_manager, parent=None) -> None:
         super().__init__(parent)
         self.config_manager = config_manager
-        self.setWindowTitle("Voice Input Settings")
-        self.resize(620, 540)
+        self.setWindowTitle(f"{i18n.t('app_title')} - {i18n.t('tray_settings').rstrip('.')}")
+        self.resize(640, 540)
         self.setStyleSheet(DARK_QSS)
 
         central_widget = QWidget()
@@ -147,24 +148,24 @@ class SettingsWindow(QMainWindow):
         self.debug_tab = DebugSettingsTab(self.config_manager)
         self.about_tab = AboutSettingsTab(self.config_manager)
 
-        self.tabs.addTab(self.asr_tab, "🎙️ ASR")
-        self.tabs.addTab(self.llm_tab, "🤖 LLM Refine")
-        self.tabs.addTab(self.webdav_tab, "☁️ WebDAV Sync")
-        self.tabs.addTab(self.proxy_tab, "🌐 Proxy")
-        self.tabs.addTab(self.hotkey_tab, "⌨️ Hotkey & General")
-        self.tabs.addTab(self.debug_tab, "🐞 Debug")
-        self.tabs.addTab(self.about_tab, "ℹ️ About")
+        self.tabs.addTab(self.asr_tab, i18n.t("tab_asr"))
+        self.tabs.addTab(self.llm_tab, i18n.t("tab_llm"))
+        self.tabs.addTab(self.webdav_tab, i18n.t("tab_webdav"))
+        self.tabs.addTab(self.proxy_tab, i18n.t("tab_proxy"))
+        self.tabs.addTab(self.hotkey_tab, i18n.t("tab_hotkey"))
+        self.tabs.addTab(self.debug_tab, i18n.t("tab_debug"))
+        self.tabs.addTab(self.about_tab, i18n.t("tab_about"))
 
         # Bottom Action Bar
         action_layout = QHBoxLayout()
         action_layout.addStretch()
 
-        self.cancel_btn = QPushButton("Cancel")
+        self.cancel_btn = QPushButton(i18n.t("btn_cancel"))
         self.cancel_btn.setFixedWidth(90)
         self.cancel_btn.clicked.connect(self.close)
         action_layout.addWidget(self.cancel_btn)
 
-        self.save_btn = QPushButton("Save Config")
+        self.save_btn = QPushButton(i18n.t("btn_save"))
         self.save_btn.setObjectName("SaveBtn")
         self.save_btn.setFixedWidth(110)
         self.save_btn.clicked.connect(self._save_config)
@@ -197,5 +198,5 @@ class SettingsWindow(QMainWindow):
         print("[Settings UI] Configuration saved to disk.")
         self.config_saved.emit()
 
-        QMessageBox.information(self, "Success", "Configuration successfully saved!")
+        QMessageBox.information(self, i18n.t("app_title"), i18n.t("btn_save") + " OK!")
         self.close()

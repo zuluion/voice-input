@@ -5,6 +5,7 @@ from PySide6.QtWidgets import (
     QWidget, QFormLayout, QHBoxLayout, QLabel, QComboBox, QPushButton
 )
 from pynput import keyboard
+from src.i18n import i18n
 
 def format_key_display(key_str: str) -> str:
     mapping = {
@@ -52,12 +53,12 @@ class HotkeyRecorderWidget(QWidget):
         """)
         layout.addWidget(self.keycap_label)
 
-        self.record_btn = QPushButton("🎙️ Click to Record")
-        self.record_btn.setFixedWidth(140)
+        self.record_btn = QPushButton(i18n.t("btn_record_hotkey"))
+        self.record_btn.setFixedWidth(150)
         self.record_btn.clicked.connect(self._toggle_recording)
         layout.addWidget(self.record_btn)
 
-        self.reset_btn = QPushButton("↺ Reset")
+        self.reset_btn = QPushButton(i18n.t("btn_reset_hotkey"))
         self.reset_btn.setFixedWidth(70)
         self.reset_btn.clicked.connect(self._reset_key)
         layout.addWidget(self.reset_btn)
@@ -85,7 +86,7 @@ class HotkeyRecorderWidget(QWidget):
 
     def _stop_recording(self) -> None:
         self.is_recording = False
-        self.record_btn.setText("🎙️ Click to Record")
+        self.record_btn.setText(i18n.t("btn_record_hotkey"))
         if self.kb_listener:
             self.kb_listener.stop()
             self.kb_listener = None
@@ -111,15 +112,22 @@ class HotkeySettingsTab(QWidget):
     def setup_ui(self) -> None:
         layout = QFormLayout(self)
 
+        # Language QComboBox
+        self.lang_combo = QComboBox()
+        self.lang_combo.addItem(i18n.t("lbl_lang_auto"), "auto")
+        self.lang_combo.addItem(i18n.t("lbl_lang_zh"), "zh_CN")
+        self.lang_combo.addItem(i18n.t("lbl_lang_en"), "en_US")
+        layout.addRow(i18n.t("lbl_language"), self.lang_combo)
+
         self.hotkey_recorder = HotkeyRecorderWidget()
         self.hotkey_recorder.key_recorded.connect(self._on_key_recorded)
-        layout.addRow("Trigger Hotkey:", self.hotkey_recorder)
+        layout.addRow(i18n.t("lbl_hotkey"), self.hotkey_recorder)
 
         self.pos_combo = QComboBox()
         self.pos_combo.addItems(["bottom_center", "top_center", "center"])
-        layout.addRow("Capsule Position:", self.pos_combo)
+        layout.addRow(i18n.t("lbl_position"), self.pos_combo)
 
-        open_config_btn = QPushButton("📂 Open Config Location")
+        open_config_btn = QPushButton(i18n.t("btn_open_config_dir"))
         open_config_btn.clicked.connect(self._open_config_dir)
         layout.addRow("", open_config_btn)
 
@@ -127,20 +135,29 @@ class HotkeySettingsTab(QWidget):
         self.recorded_key_str = key_str
 
     def load_config(self) -> None:
+        lang = self.config_manager.get("language", default="auto")
+        idx = self.lang_combo.findData(lang)
+        if idx >= 0:
+            self.lang_combo.setCurrentIndex(idx)
+
         hotkey = self.config_manager.get("hotkey", default="Key.ctrl_r")
         self.recorded_key_str = hotkey
         self.hotkey_recorder.update_display(hotkey)
 
         pos = self.config_manager.get("ui", "position", default="bottom_center")
-        idx = self.pos_combo.findText(pos)
-        if idx >= 0:
-            self.pos_combo.setCurrentIndex(idx)
+        pos_idx = self.pos_combo.findText(pos)
+        if pos_idx >= 0:
+            self.pos_combo.setCurrentIndex(pos_idx)
 
     def save_config(self, cfg: dict) -> None:
+        cfg["language"] = self.lang_combo.currentData()
         cfg["hotkey"] = self.recorded_key_str
         if "ui" not in cfg:
             cfg["ui"] = {}
         cfg["ui"]["position"] = self.pos_combo.currentText()
+
+        # Apply i18n immediately
+        i18n.set_language(cfg["language"])
 
     def _open_config_dir(self) -> None:
         path = self.config_manager.config_path
