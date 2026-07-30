@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2026.07.30.017] - 2026-07-30
+
+### 🛠️ CI/CD Release Build Fix
+- **Windows Executable Icon Fix**: Generated multi-resolution `assets/logo.ico` and added `pillow` dependency to GitHub Release workflow, fixing PyInstaller icon format error on Windows Server.
+
 ## [2026.07.30.016] - 2026-07-30
 
 ### 🚀 Zero-Compiler Local Engine, Decoupled Prompts & Final Polish
