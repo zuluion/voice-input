@@ -49,6 +49,18 @@ type/YYYY-MM-DD_业务描述
 - **格式**：日期 `YYYY-MM-DD` 搭配下划线连接小写英文描述。
 - **示例**：`feature/2026-07-29_windows_voice_input_pyside6`
 
+### 预推送合并与冲突预防规范 (Pre-Push & Conflict Prevention Standard)
+为防止 GitHub Actions 自动化工作流在 `master` 发布 Release 后自动更新 `voice-input.json` 导致合并推送冲突，项目统一遵循以下无冲突流转规范：
+
+1. **功能分支独立推拉 (Feature Branch Push/Pull)**：
+   - 所有功能开发、测试与临时备份均在 `type/YYYY-MM-DD_业务描述` 独立功能分支上进行。
+   - **开发分支自由 Push**：功能分支可随时自由执行 `git push origin <feature-branch>` 上传远程。由于 CI/CD 仅监听 `master`/`main` 触发 Release，功能分支不会受到 Scoop Manifest 自动提交的冲突打扰。
+2. **合并至 Master 前的三步消隐冲突法**：
+   当准备将功能分支合并至 `master` 主分支进行最终 Release 发布时，按以下顺序操作：
+   - **Step 1 (拉取主分支)**：`git checkout master && git pull origin master`（此时主分支无本地冲突，100% 顺畅同步远端）。
+   - **Step 2 (分支内部消解)**：`git checkout <feature-branch> && git merge master`（在功能分支内部消化 `voice-input.json` 等潜在冲突并验证测试）。
+   - **Step 3 (主分支 Fast-Forward 推送)**：`git checkout master && git merge <feature-branch> && git push origin master`（100% 顺畅 Fast-Forward 快速推送，触发 CI/CD 自动构建）。
+
 ---
 
 ## 5. 项目架构与技术栈概览 (Project Stack)
