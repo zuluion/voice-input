@@ -3,6 +3,8 @@ import io
 import wave
 import requests
 from src.asr.base import BaseASRProvider
+from src.utils.logger import logger
+from src.utils.proxy import get_current_proxy_str
 
 class XiaomiMiMoASRProvider(BaseASRProvider):
     def __init__(self, config: dict = None) -> None:
@@ -20,10 +22,13 @@ class XiaomiMiMoASRProvider(BaseASRProvider):
 
     def finish(self) -> str:
         if not self.pcm_chunks:
-            print("[Xiaomi MiMo ASR] No audio PCM chunks captured.")
+            logger.log("Xiaomi MiMo ASR", "No audio PCM chunks captured.")
             return ""
 
-        print(f"[Xiaomi MiMo ASR] Processing {len(self.pcm_chunks)} bytes of PCM audio...")
+        proxy_info = get_current_proxy_str()
+        proxy_tag = f" [VIA PROXY: {proxy_info}]" if proxy_info else " [DIRECT]"
+
+        logger.log("Xiaomi MiMo ASR", f"Processing {len(self.pcm_chunks)} bytes of PCM audio{proxy_tag}...")
 
         # Convert raw PCM to WAV bytes
         wav_io = io.BytesIO()
@@ -62,43 +67,43 @@ class XiaomiMiMoASRProvider(BaseASRProvider):
 
         url = f"{self.base_url}/chat/completions"
         try:
-            print(f"[Xiaomi MiMo ASR] Sending POST request to {url}...")
+            logger.log("Xiaomi MiMo ASR", f"Sending POST request{proxy_tag} to {url}...")
             resp = requests.post(url, headers=headers, json=payload, timeout=12)
-            print(f"[Xiaomi MiMo ASR] Response HTTP status: {resp.status_code}")
+            logger.log("Xiaomi MiMo ASR", f"Response HTTP status: {resp.status_code}")
             if resp.status_code == 200:
                 res_json = resp.json()
                 choices = res_json.get("choices", [])
                 if choices:
                     text = choices[0].get("message", {}).get("content", "").strip()
-                    print(f"[Xiaomi MiMo ASR] Recognized text: '{text}'")
+                    logger.log("Xiaomi MiMo ASR", f"Recognized text: '{text}'")
                     self.text_updated.emit(text, True)
                     return text
             else:
-                print(f"[Xiaomi MiMo ASR] Primary endpoint failed ({resp.status_code}): {resp.text}")
+                logger.log("Xiaomi MiMo ASR", f"Primary endpoint failed ({resp.status_code}): {resp.text}")
         except Exception as e:
-            print(f"[Xiaomi MiMo ASR] Primary endpoint exception: {e}")
+            logger.log("Xiaomi MiMo ASR", f"Primary endpoint exception: {e}")
 
         # Fallback to audio/transcriptions endpoint
         try:
             tr_url = f"{self.base_url}/audio/transcriptions"
-            print(f"[Xiaomi MiMo ASR] Trying fallback endpoint: {tr_url}...")
+            logger.log("Xiaomi MiMo ASR", f"Trying fallback endpoint{proxy_tag}: {tr_url}...")
             files = {"file": ("audio.wav", wav_bytes, "audio/wav")}
             data = {"model": self.model}
             tr_headers = {"Authorization": f"Bearer {self.api_key}"}
             resp = requests.post(tr_url, headers=tr_headers, files=files, data=data, timeout=12)
-            print(f"[Xiaomi MiMo ASR] Fallback response status: {resp.status_code}")
+            logger.log("Xiaomi MiMo ASR", f"Fallback response status: {resp.status_code}")
             if resp.status_code == 200:
                 text = resp.json().get("text", "").strip()
-                print(f"[Xiaomi MiMo ASR] Recognized text (fallback): '{text}'")
+                logger.log("Xiaomi MiMo ASR", f"Recognized text (fallback): '{text}'")
                 self.text_updated.emit(text, True)
                 return text
             else:
-                print(f"[Xiaomi MiMo ASR] Fallback endpoint failed ({resp.status_code}): {resp.text}")
+                logger.log("Xiaomi MiMo ASR", f"Fallback endpoint failed ({resp.status_code}): {resp.text}")
                 err_msg = f"Xiaomi MiMo ASR Error ({resp.status_code}): {resp.text}"
                 self.error_occurred.emit(err_msg)
                 return ""
         except Exception as ex:
             err_msg = f"Xiaomi MiMo ASR Fallback Exception: {ex}"
-            print(f"[Xiaomi MiMo ASR] {err_msg}")
+            logger.log("Xiaomi MiMo ASR", err_msg)
             self.error_occurred.emit(err_msg)
             return ""

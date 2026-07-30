@@ -1,4 +1,7 @@
+import os
 import requests
+from src.utils.logger import logger
+from src.utils.proxy import get_current_proxy_str
 
 DEFAULT_SYSTEM_PROMPT = """你是一个专业的语音输入文本精修与整理助手。请对输入的语音识别文本进行智能润色与纠错，严格遵循以下规则：
 
@@ -33,19 +36,23 @@ class LLMRefiner:
 
     def refine(self, transcript: str) -> str:
         if not transcript.strip():
-            print("[LLM Refine] Empty transcript. Skipping LLM refinement.")
+            logger.log("LLM Refine", "Empty transcript. Skipping LLM refinement.")
             return transcript
 
         if not self.enabled:
-            print("[LLM Refine] LLM refinement is disabled in settings. Skipping LLM.")
+            logger.log("LLM Refine", "LLM refinement is disabled in settings. Skipping LLM.")
             return transcript
 
         if not self.api_key and "localhost" not in self.base_url and "127.0.0.1" not in self.base_url:
-            print("[LLM Refine] LLM API Key is empty. Skipping LLM refinement.")
+            logger.log("LLM Refine", "LLM API Key is empty. Skipping LLM refinement.")
             return transcript
 
-        print(f"[LLM Refine] Starting LLM refinement using model '{self.model}' at {self.base_url}...")
-        print(f"[LLM Refine] Raw ASR Input: '{transcript}'")
+        proxy_info = get_current_proxy_str()
+        proxy_tag = f" [VIA PROXY: {proxy_info}]" if proxy_info else " [DIRECT]"
+
+        url = f"{self.base_url}/chat/completions"
+        logger.log("LLM Refine", f"Starting LLM refinement{proxy_tag} -> Model '{self.model}' at {url}")
+        logger.log("LLM Refine", f"Raw ASR Input: '{transcript}'")
 
         headers = {
             "Content-Type": "application/json"
@@ -61,26 +68,26 @@ class LLMRefiner:
             ],
             "temperature": 0.2
         }
-        url = f"{self.base_url}/chat/completions"
+
         try:
             resp = requests.post(url, headers=headers, json=payload, timeout=8)
-            print(f"[LLM Refine] Response HTTP status: {resp.status_code}")
+            logger.log("LLM Refine", f"Response HTTP status: {resp.status_code}")
             if resp.status_code == 200:
                 res_json = resp.json()
                 choices = res_json.get("choices", [])
                 if choices:
                     refined = choices[0].get("message", {}).get("content", "").strip()
                     if refined and refined != transcript:
-                        print(f"[LLM Refine] Refined Output: '{refined}'")
+                        logger.log("LLM Refine", f"Refined Output: '{refined}'")
                         return refined
                     else:
-                        print(f"[LLM Refine] Text validated. No correction needed: '{transcript}'")
+                        logger.log("LLM Refine", f"Text validated. No correction needed: '{transcript}'")
                         return transcript
             else:
-                print(f"[LLM Refine] API Error ({resp.status_code}): {resp.text}")
+                logger.log("LLM Refine", f"API Error ({resp.status_code}): {resp.text}")
                 return transcript
         except Exception as e:
-            print(f"[LLM Refine] Exception during refinement: {e}")
+            logger.log("LLM Refine", f"Exception during refinement: {e}")
             return transcript
 
         return transcript

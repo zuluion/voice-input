@@ -1,9 +1,22 @@
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
-    QWidget, QFormLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QCheckBox,
+    QWidget, QFormLayout, QHBoxLayout, QLabel, QLineEdit, QComboBox, QSpinBox, QPushButton, QCheckBox,
     QMessageBox, QDialog, QVBoxLayout, QListWidget, QListWidgetItem, QDialogButtonBox
 )
 from src.utils.webdav import WebDAVSync
+
+WEBDAV_PROVIDER_DEFAULTS = {
+    "jianguoyun": {
+        "server_url": "https://dav.jianguoyun.com/dav/",
+        "remote_dir": "/VoiceInput",
+        "max_backups": 5
+    },
+    "custom": {
+        "server_url": "https://dav.jianguoyun.com/dav/",
+        "remote_dir": "/VoiceInput",
+        "max_backups": 5
+    }
+}
 
 class WebDAVHistoryDialog(QDialog):
     def __init__(self, backups: list[dict], parent=None) -> None:
@@ -43,6 +56,7 @@ class WebDAVSettingsTab(QWidget):
     def __init__(self, config_manager) -> None:
         super().__init__()
         self.config_manager = config_manager
+        self._updating_ui = False
         self.setup_ui()
 
     def setup_ui(self) -> None:
@@ -50,6 +64,11 @@ class WebDAVSettingsTab(QWidget):
 
         self.enable_webdav_cb = QCheckBox("Enable WebDAV Configuration Sync")
         layout.addRow("", self.enable_webdav_cb)
+
+        self.provider_combo = QComboBox()
+        self.provider_combo.addItems(["jianguoyun", "custom"])
+        self.provider_combo.currentTextChanged.connect(self._on_provider_changed)
+        layout.addRow("WebDAV Provider:", self.provider_combo)
 
         self.server_url_input = QLineEdit()
         self.server_url_input.setPlaceholderText("https://dav.jianguoyun.com/dav/")
@@ -64,9 +83,14 @@ class WebDAVSettingsTab(QWidget):
         self.password_input.setPlaceholderText("App Password / Secret")
         layout.addRow("Password / Secret:", self.password_input)
 
-        self.remote_path_input = QLineEdit()
-        self.remote_path_input.setPlaceholderText("/VoiceInput/config.json")
-        layout.addRow("Remote Path:", self.remote_path_input)
+        self.remote_dir_input = QLineEdit()
+        self.remote_dir_input.setPlaceholderText("/VoiceInput")
+        layout.addRow("Remote Directory:", self.remote_dir_input)
+
+        self.max_backups_spin = QSpinBox()
+        self.max_backups_spin.setRange(1, 50)
+        self.max_backups_spin.setValue(5)
+        layout.addRow("Max Backups Retention:", self.max_backups_spin)
 
         self.auto_sync_cb = QCheckBox("Auto-sync from WebDAV on application startup")
         layout.addRow("", self.auto_sync_cb)
@@ -90,33 +114,70 @@ class WebDAVSettingsTab(QWidget):
 
         layout.addRow("", btn_layout2)
 
+    def _on_provider_changed(self, provider: str) -> None:
+        if self._updating_ui:
+            return
+
+        defaults = WEBDAV_PROVIDER_DEFAULTS.get(provider, WEBDAV_PROVIDER_DEFAULTS["jianguoyun"])
+        saved_provider_cfg = self.config_manager.get("webdav", provider, default={})
+
+        saved_url = saved_provider_cfg.get("server_url", "")
+        saved_user = saved_provider_cfg.get("username", "")
+        saved_pwd = saved_provider_cfg.get("password", "")
+        saved_dir = saved_provider_cfg.get("remote_dir", "")
+        saved_max = saved_provider_cfg.get("max_backups", 5)
+
+        self.server_url_input.setText(saved_url if saved_url else defaults["server_url"])
+        self.username_input.setText(saved_user)
+        self.password_input.setText(saved_pwd)
+        self.remote_dir_input.setText(saved_dir if saved_dir else defaults["remote_dir"])
+        self.max_backups_spin.setValue(int(saved_max))
+
     def load_config(self) -> None:
+        self._updating_ui = True
         cfg = self.config_manager.config.get("webdav", {})
         self.enable_webdav_cb.setChecked(cfg.get("enabled", False))
-        self.server_url_input.setText(cfg.get("server_url", "https://dav.jianguoyun.com/dav/"))
-        self.username_input.setText(cfg.get("username", ""))
-        self.password_input.setText(cfg.get("password", ""))
-        self.remote_path_input.setText(cfg.get("remote_path", "/VoiceInput/config.json"))
+
+        provider = cfg.get("provider", "jianguoyun")
+        idx = self.provider_combo.findText(provider)
+        if idx >= 0:
+            self.provider_combo.setCurrentIndex(idx)
+
         self.auto_sync_cb.setChecked(cfg.get("auto_sync_on_startup", False))
+
+        self._updating_ui = False
+        self._on_provider_changed(provider)
 
     def save_config(self, cfg: dict) -> None:
         if "webdav" not in cfg:
             cfg["webdav"] = {}
 
         cfg["webdav"]["enabled"] = self.enable_webdav_cb.isChecked()
-        cfg["webdav"]["server_url"] = self.server_url_input.text().strip()
-        cfg["webdav"]["username"] = self.username_input.text().strip()
-        cfg["webdav"]["password"] = self.password_input.text().strip()
-        cfg["webdav"]["remote_path"] = self.remote_path_input.text().strip() or "/VoiceInput/config.json"
+        provider = self.provider_combo.currentText()
+        cfg["webdav"]["provider"] = provider
+
+        if provider not in cfg["webdav"]:
+            cfg["webdav"][provider] = {}
+
+        cfg["webdav"][provider]["server_url"] = self.server_url_input.text().strip() or "https://dav.jianguoyun.com/dav/"
+        cfg["webdav"][provider]["username"] = self.username_input.text().strip()
+        cfg["webdav"][provider]["password"] = self.password_input.text().strip()
+        cfg["webdav"][provider]["remote_dir"] = self.remote_dir_input.text().strip() or "/VoiceInput"
+        cfg["webdav"][provider]["max_backups"] = self.max_backups_spin.value()
         cfg["webdav"]["auto_sync_on_startup"] = self.auto_sync_cb.isChecked()
 
     def _get_webdav_instance(self) -> WebDAVSync:
+        provider = self.provider_combo.currentText()
         temp_cfg = {
             "enabled": self.enable_webdav_cb.isChecked(),
-            "server_url": self.server_url_input.text().strip(),
-            "username": self.username_input.text().strip(),
-            "password": self.password_input.text().strip(),
-            "remote_path": self.remote_path_input.text().strip() or "/VoiceInput/config.json"
+            "provider": provider,
+            provider: {
+                "server_url": self.server_url_input.text().strip(),
+                "username": self.username_input.text().strip(),
+                "password": self.password_input.text().strip(),
+                "remote_dir": self.remote_dir_input.text().strip() or "/VoiceInput",
+                "max_backups": self.max_backups_spin.value()
+            }
         }
         return WebDAVSync(temp_cfg)
 

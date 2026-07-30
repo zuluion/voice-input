@@ -86,11 +86,25 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     },
     "webdav": {
         "enabled": False,
-        "server_url": "https://dav.jianguoyun.com/dav/",
-        "username": "",
-        "password": "",
-        "remote_path": "/VoiceInput/config.json",
-        "auto_sync_on_startup": False
+        "provider": "jianguoyun",
+        "auto_sync_on_startup": False,
+        "jianguoyun": {
+            "server_url": "https://dav.jianguoyun.com/dav/",
+            "username": "",
+            "password": "",
+            "remote_dir": "/VoiceInput",
+            "max_backups": 5
+        },
+        "custom": {
+            "server_url": "https://dav.jianguoyun.com/dav/",
+            "username": "",
+            "password": "",
+            "remote_dir": "/VoiceInput",
+            "max_backups": 5
+        }
+    },
+    "debug": {
+        "enabled": False
     },
     "ui": {
         "position": "bottom_center",
@@ -100,7 +114,10 @@ DEFAULT_CONFIG: Dict[str, Any] = {
 
 def resolve_config_path(config_path: str = None) -> str:
     if config_path:
-        return config_path
+        if os.path.isdir(config_path):
+            print(f"[Config] Warning: Explicit path '{config_path}' is a directory. Falling back to AppData.")
+        else:
+            return config_path
 
     # Check local portable config.json
     local_path = "config.json"

@@ -9,6 +9,7 @@ from src.ui.settings.llm_tab import LLMSettingsTab
 from src.ui.settings.webdav_tab import WebDAVSettingsTab
 from src.ui.settings.proxy_tab import ProxySettingsTab
 from src.ui.settings.hotkey_tab import HotkeySettingsTab
+from src.ui.settings.debug_tab import DebugSettingsTab
 from src.ui.settings.about_tab import AboutSettingsTab
 
 DARK_QSS = """
@@ -31,7 +32,7 @@ QTabBar::tab {
     color: #9ca3af;
     border: 1px solid transparent;
     border-bottom: 2px solid transparent;
-    padding: 8px 16px;
+    padding: 8px 14px;
     margin-right: 4px;
     border-top-left-radius: 6px;
     border-top-right-radius: 6px;
@@ -53,7 +54,7 @@ QLabel {
     color: #e5e7eb;
 }
 
-QLineEdit, QComboBox, QPlainTextEdit, QListWidget {
+QLineEdit, QComboBox, QSpinBox, QPlainTextEdit, QListWidget {
     background-color: #242936;
     color: #f3f4f6;
     border: 1px solid #374151;
@@ -62,7 +63,7 @@ QLineEdit, QComboBox, QPlainTextEdit, QListWidget {
     selection-background-color: #6366f1;
 }
 
-QLineEdit:focus, QComboBox:focus, QPlainTextEdit:focus, QListWidget:focus {
+QLineEdit:focus, QComboBox:focus, QSpinBox:focus, QPlainTextEdit:focus, QListWidget:focus {
     border: 1.5px solid #6366f1;
 }
 
@@ -125,7 +126,7 @@ class SettingsWindow(QMainWindow):
         super().__init__(parent)
         self.config_manager = config_manager
         self.setWindowTitle("Voice Input Settings")
-        self.resize(600, 520)
+        self.resize(620, 540)
         self.setStyleSheet(DARK_QSS)
 
         central_widget = QWidget()
@@ -143,6 +144,7 @@ class SettingsWindow(QMainWindow):
         self.webdav_tab = WebDAVSettingsTab(self.config_manager)
         self.proxy_tab = ProxySettingsTab(self.config_manager)
         self.hotkey_tab = HotkeySettingsTab(self.config_manager)
+        self.debug_tab = DebugSettingsTab(self.config_manager)
         self.about_tab = AboutSettingsTab(self.config_manager)
 
         self.tabs.addTab(self.asr_tab, "🎙️ ASR")
@@ -150,6 +152,7 @@ class SettingsWindow(QMainWindow):
         self.tabs.addTab(self.webdav_tab, "☁️ WebDAV Sync")
         self.tabs.addTab(self.proxy_tab, "🌐 Proxy")
         self.tabs.addTab(self.hotkey_tab, "⌨️ Hotkey & General")
+        self.tabs.addTab(self.debug_tab, "🐞 Debug")
         self.tabs.addTab(self.about_tab, "ℹ️ About")
 
         # Bottom Action Bar
@@ -177,6 +180,7 @@ class SettingsWindow(QMainWindow):
         self.webdav_tab.load_config()
         self.proxy_tab.load_config()
         self.hotkey_tab.load_config()
+        self.debug_tab.load_config()
         self.about_tab.load_config()
 
     def _save_config(self) -> None:
@@ -186,6 +190,7 @@ class SettingsWindow(QMainWindow):
         self.webdav_tab.save_config(cfg)
         self.proxy_tab.save_config(cfg)
         self.hotkey_tab.save_config(cfg)
+        self.debug_tab.save_config(cfg)
         self.about_tab.save_config(cfg)
 
         self.config_manager.save_config(cfg)

@@ -2,6 +2,36 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2026.07.30.006] - 2026-07-30
+
+### 🚀 Debug Logging & Proxy Visibility
+- **Explicit Proxy Logging**: Updated `src/utils/proxy.py`, `src/refine/llm.py`, and `src/asr/xiaomi_mimo.py` to output explicit log tags (`[PROXY ENABLED: socks5://127.0.0.1:7890]`, `[VIA PROXY: ...]`, `[DIRECT]`) when global proxy is active, making network routing 100% visible in debug logs.
+
+## [2026.07.30.005] - 2026-07-30
+
+### 🚀 Features & Debug Logging
+- **WebDAV Provider Mode**: Added provider mode support to WebDAV Settings (`src/ui/settings/webdav_tab.py`), defaulting to `jianguoyun` (坚果云) while supporting `custom` WebDAV providers.
+- **Timestamped Debug Logging Mode**: Added Debug Settings Tab (`src/ui/settings/debug_tab.py`) and `AppLogger` (`src/utils/logger.py`). When Debug Mode is ON, writes timestamped plaintext ASR & LLM recognition logs to `<app_dir>/logs/voice_input_YYYYMMDD.log` for troubleshooting. When OFF, zero logging occurs to preserve privacy.
+- **Default Hotkey Verification**: Verified and enforced `Key.ctrl_r` (`Right Control`) as the default trigger hotkey across configuration and recorder settings.
+
+## [2026.07.30.004] - 2026-07-30
+
+### 🚀 WebDAV Backup Rotation & Dir Simplification
+- **Remote Directory Simplification**: Updated WebDAV config to specify remote directory (`remote_dir`, default `/VoiceInput`) while maintaining `config.json` as the primary configuration file.
+- **Timestamped History Backups**: Enhanced upload history backups with timestamp suffix (e.g. `config_20260730_101629.json`).
+- **Max 5 Backups Auto-Retention Cleanup**: Implemented automatic backup rotation with default `max_backups = 5` retention. When backup files exceed 5, oldest history files are automatically deleted via WebDAV `DELETE` API.
+
+## [2026.07.30.003] - 2026-07-30
+
+### 🧪 Testing & E2E Integration Suite
+- **Comprehensive Unit & Integration Test Suite**: Expanded `tests/` directory with 19 comprehensive unit and E2E integration tests:
+  - `tests/test_config_manager.py`: Configuration loading, portable mode, AppData resolution, and directory anomaly fallback.
+  - `tests/test_webdav_sync.py`: WebDAV upload, download, and history backup PROPFIND XML response parsing.
+  - `tests/test_proxy.py`: Environment proxy injection and network connection testing.
+  - `tests/test_hotkey.py`: Strict VK matching for Left vs Right Control/Alt.
+  - `tests/test_llm_providers.py`: 6-provider configuration and spoken self-correction prompt logic.
+  - `tests/test_e2e_pipeline.py`: Full end-to-end integration test (Floating capsule -> ASR -> LLM refinement -> Injector).
+
 ## [2026.07.30.002] - 2026-07-30
 
 ### 🚀 Features & Architecture Refactoring

@@ -1,6 +1,6 @@
 import os
-from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QDesktopServices, QUrl
+from PySide6.QtCore import Qt, Signal, QUrl
+from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import (
     QWidget, QFormLayout, QHBoxLayout, QLabel, QComboBox, QPushButton
 )

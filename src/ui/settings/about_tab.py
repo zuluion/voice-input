@@ -1,7 +1,7 @@
 import os
 import requests
-from PySide6.QtCore import Qt
-from PySide6.QtGui import QDesktopServices, QUrl, QFont
+from PySide6.QtCore import Qt, QUrl
+from PySide6.QtGui import QDesktopServices, QFont
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QMessageBox
 )
@@ -14,7 +14,7 @@ def get_current_version() -> str:
                 return f.read().strip()
         except Exception:
             pass
-    return "2026.07.30.001"
+    return "2026.07.30.003"
 
 class AboutSettingsTab(QWidget):
     def __init__(self, config_manager=None) -> None:
@@ -90,7 +90,6 @@ class AboutSettingsTab(QWidget):
                 data = resp.json()
                 tag_name = data.get("tag_name", "").lstrip("v")
                 html_url = data.get("html_url", "https://github.com/zuluion/voice-input/releases")
-                body = data.get("body", "")
 
                 if tag_name and tag_name != self.version_str:
                     msg = f"New version available!\nLatest: v{tag_name}\nCurrent: v{self.version_str}\n\nWould you like to open the release page?"

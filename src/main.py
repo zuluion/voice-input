@@ -22,6 +22,7 @@ from src.refine.llm import LLMRefiner
 from src.utils.injector import TextInjector
 from src.utils.proxy import apply_proxy_config
 from src.utils.webdav import WebDAVSync
+from src.utils.logger import logger
 from src.ui.capsule import FloatingCapsule
 from src.ui.tray import SystemTrayApp
 from src.ui.settings import SettingsWindow
@@ -40,18 +41,24 @@ class ASRProcessingWorker(QThread):
         if self.asr_provider:
             raw_text = self.asr_provider.finish()
 
+        logger.log("ASR Result", f"Raw Recognized Text: '{raw_text}'")
+
         if not raw_text.strip():
             self.processing_finished.emit("")
             return
 
         self.status_changed.emit("Refining...")
         refined_text = self.llm_refiner.refine(raw_text)
+        logger.log("LLM Output", f"Refined Text: '{refined_text}'")
         self.processing_finished.emit(refined_text)
 
 class VoiceInputController(QObject):
     def __init__(self) -> None:
         super().__init__()
         self.config_manager = ConfigManager()
+
+        # Configure Debug Logger
+        logger.configure(self.config_manager.get("debug", default={}), self.config_manager.config_path)
 
         # Apply Proxy Config
         apply_proxy_config(self.config_manager.get("proxy", default={}))
@@ -87,27 +94,28 @@ class VoiceInputController(QObject):
     def _check_webdav_auto_sync(self) -> None:
         webdav_cfg = self.config_manager.get("webdav", default={})
         if webdav_cfg.get("enabled") and webdav_cfg.get("auto_sync_on_startup"):
-            print("[Main] WebDAV Auto-sync on startup is enabled. Downloading latest config...")
+            logger.log("Main", "WebDAV Auto-sync on startup is enabled. Downloading latest config...")
             sync = WebDAVSync(webdav_cfg)
             threading.Thread(target=self._run_webdav_sync, args=(sync,), daemon=True).start()
 
     def _run_webdav_sync(self, sync: WebDAVSync) -> None:
         ok, msg = sync.download_config(self.config_manager.config_path)
         if ok:
-            print("[Main] WebDAV Auto-sync succeeded! Reloading config...")
+            logger.log("Main", "WebDAV Auto-sync succeeded! Reloading config...")
             self.config_manager.config = self.config_manager.load_config()
             apply_proxy_config(self.config_manager.get("proxy", default={}))
+            logger.configure(self.config_manager.get("debug", default={}), self.config_manager.config_path)
         else:
-            print(f"[Main] WebDAV Auto-sync failed: {msg}")
+            logger.log("Main", f"WebDAV Auto-sync failed: {msg}")
 
     def start(self) -> None:
         self.tray_app.show()
         self.hotkey_listener.start()
 
     def _on_recording_started(self) -> None:
-        print("[Main] Recording started signal received")
+        logger.log("Main", "Recording started signal received")
         if not self.tray_app.is_enabled():
-            print("[Main] Tray app is disabled, ignoring hotkey")
+            logger.log("Main", "Tray app is disabled, ignoring hotkey")
             return
 
         self.capsule.set_state(FloatingCapsule.STATE_PREPARING)
@@ -123,7 +131,7 @@ class VoiceInputController(QObject):
         self.audio_recorder.start()
 
     def _on_recording_ready(self) -> None:
-        print("[Main] Microphone captured first audio frame -> Switching to LISTENING state")
+        logger.log("Main", "Microphone captured first audio frame -> Switching to LISTENING state")
         self.capsule.set_state(FloatingCapsule.STATE_LISTENING)
 
     def _on_audio_chunk(self, chunk: bytes) -> None:
@@ -131,7 +139,7 @@ class VoiceInputController(QObject):
             self.current_asr.send_audio_chunk(chunk)
 
     def _on_audio_error(self, err_msg: str) -> None:
-        print(f"[Main Audio Error] {err_msg}")
+        logger.log("Main Audio Error", err_msg)
         self.capsule.hide_capsule()
         self.tray_app.tray_icon.showMessage(
             "语音输入设备错误",
@@ -146,11 +154,11 @@ class VoiceInputController(QObject):
             self.capsule.set_status_text(text)
 
     def _on_asr_error(self, err_msg: str) -> None:
-        print(f"[Main ASR Error] {err_msg}")
+        logger.log("Main ASR Error", err_msg)
         self.capsule.set_status_text("ASR Error")
 
     def _on_recording_stopped(self) -> None:
-        print("[Main] Recording stopped signal received")
+        logger.log("Main", "Recording stopped signal received")
         if not self.tray_app.is_enabled():
             return
         self.audio_recorder.stop()
@@ -162,7 +170,7 @@ class VoiceInputController(QObject):
         self.worker.start()
 
     def _on_processing_finished(self, text: str) -> None:
-        print(f"[Main] Processing finished. Final text: '{text}'")
+        logger.log("Main", f"Processing finished. Final text to inject: '{text}'")
         if text.strip():
             self.injector.inject(text)
         self.capsule.hide_capsule()
@@ -179,6 +187,7 @@ class VoiceInputController(QObject):
         self.hotkey_listener.set_target_key(new_hotkey)
         self.llm_refiner = LLMRefiner(self.config_manager.get("llm", default={}))
         apply_proxy_config(self.config_manager.get("proxy", default={}))
+        logger.configure(self.config_manager.get("debug", default={}), self.config_manager.config_path)
 
     def _quit_app(self) -> None:
         self.hotkey_listener.stop()
