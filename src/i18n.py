@@ -1,4 +1,3 @@
-import locale
 from PySide6.QtCore import QLocale
 
 TRANSLATIONS = {
@@ -40,7 +39,7 @@ TRANSLATIONS = {
         "btn_open_logs_dir": "📂 打开日志文件夹",
         "btn_check_update": "🚀 检查版本更新",
 
-        # Form Labels
+        # Form Labels & Common
         "lbl_language": "显示语言:",
         "lbl_lang_auto": "跟随系统 (Auto)",
         "lbl_lang_zh": "简体中文 (Chinese)",
@@ -49,34 +48,61 @@ TRANSLATIONS = {
         "lbl_api_key": "API 密钥 (Key):",
         "lbl_base_url": "服务地址 (Base URL):",
         "lbl_model_name": "模型名称:",
-        "lbl_hotkey": "触发热键:",
-        "lbl_position": "悬浮窗位置:",
 
-        # WebDAV
-        "lbl_enable_webdav": "启用 WebDAV 配置文件同步",
-        "lbl_webdav_url": "WebDAV 服务器 URL:",
-        "lbl_webdav_user": "账号 / 用户名:",
-        "lbl_webdav_pwd": "应用密码 / 密钥:",
-        "lbl_remote_dir": "远端保存目录:",
-        "lbl_max_backups": "最多保留备份数:",
-        "lbl_auto_sync": "启动应用时自动从 WebDAV 下载最新配置",
+        # ASR Tab
+        "asr_provider": "ASR 供应商:",
+        "asr_doubao_app_id": "豆包 App ID:",
+        "asr_doubao_token": "访问令牌 (Access Token):",
+        "asr_doubao_cluster": "业务集群 (Cluster):",
+        "asr_qwen_api_key": "通义千问 API 密钥:",
+        "asr_qwen_app_key": "通义千问 App 密钥:",
+        "asr_mimo_api_key": "小米 MiMo API 密钥:",
+        "asr_mimo_base_url": "小米 MiMo 服务地址:",
+        "asr_mimo_model": "小米 MiMo 模型名称:",
+        "asr_openai_api_key": "Whisper API 密钥:",
+        "asr_openai_base_url": "Whisper 服务地址:",
+        "asr_openai_model": "Whisper 模型名称:",
 
-        # Proxy
-        "lbl_enable_proxy": "启用全局网络代理",
-        "lbl_proxy_protocol": "代理协议:",
-        "lbl_proxy_host": "代理主机:",
-        "lbl_proxy_port": "代理端口:",
+        # LLM Tab
+        "llm_enable": "启用 LLM 智能精修与口语纠错",
+        "llm_provider": "LLM 供应商:",
+        "llm_system_prompt": "系统提示词 (System Prompt):",
 
-        # Debug
-        "lbl_enable_debug": "启用调试日志模式 (写入日志文件)",
-        "lbl_debug_desc": "<b>注意:</b> 开启调试模式后，应用会在本地 <code>logs/</code> 目录下生成格式化日志（包含 ASR 识别原始文本与 LLM 润色输出）。<br>日常使用建议关闭调试模式以保护个人隐私。",
+        # WebDAV Tab
+        "webdav_enable": "启用 WebDAV 配置文件同步",
+        "webdav_provider": "WebDAV 供应商:",
+        "webdav_server_url": "WebDAV 服务器 URL:",
+        "webdav_username": "账号 / 用户名:",
+        "webdav_password": "应用密码 / 密钥:",
+        "webdav_remote_dir": "远端保存目录:",
+        "webdav_max_backups": "最多保留备份数:",
+        "webdav_auto_sync": "启动应用时自动从 WebDAV 下载最新配置",
+        "webdav_history_title": "📋 选择需恢复的 WebDAV 备份",
+        "webdav_history_label": "找到的远端 WebDAV 备份文件:",
 
-        # About
-        "lbl_about_subtitle": "Windows 系统托盘语音输入法应用 · PySide6 & 多 Provider ASR/LLM 精修",
-        "lbl_author": "开发者:",
-        "lbl_current_ver": "当前版本:",
-        "lbl_repo": "官方 GitHub 仓库:",
-        "lbl_license": "开源协议:"
+        # Proxy Tab
+        "proxy_enable": "启用全局网络代理",
+        "proxy_protocol": "代理协议:",
+        "proxy_host": "代理主机:",
+        "proxy_port": "代理端口:",
+
+        # Hotkey & General Tab
+        "hotkey_trigger": "触发热键:",
+        "hotkey_position": "悬浮窗位置:",
+        "hotkey_recording": "🔴 请按下任意热键...",
+        "hotkey_waiting": "[ 等待按键中... ]",
+
+        # Debug Tab
+        "debug_enable": "启用调试日志模式 (写入日志文件)",
+        "debug_desc": "<b>注意:</b> 开启调试模式后，应用会在本地 <code>logs/</code> 目录下生成格式化日志（包含 ASR 识别原始文本与 LLM 润色输出）。<br>日常使用建议关闭调试模式以保护个人隐私。",
+
+        # About Tab
+        "about_title": "🎙️ Voice Input (语音输入法)",
+        "about_subtitle": "Windows 系统托盘语音输入法应用 · PySide6 & 多 Provider ASR/LLM 精修",
+        "about_author": "开发者:",
+        "about_version": "当前版本:",
+        "about_repo": "官方 GitHub 仓库:",
+        "about_license": "开源协议:"
     },
     "en_US": {
         # General & Tray
@@ -116,7 +142,7 @@ TRANSLATIONS = {
         "btn_open_logs_dir": "📂 Open Logs Directory",
         "btn_check_update": "🚀 Check for Updates",
 
-        # Form Labels
+        # Form Labels & Common
         "lbl_language": "Language:",
         "lbl_lang_auto": "Auto (System Default)",
         "lbl_lang_zh": "简体中文 (Chinese)",
@@ -125,34 +151,61 @@ TRANSLATIONS = {
         "lbl_api_key": "API Key:",
         "lbl_base_url": "Base URL:",
         "lbl_model_name": "Model Name:",
-        "lbl_hotkey": "Trigger Hotkey:",
-        "lbl_position": "Capsule Position:",
 
-        # WebDAV
-        "lbl_enable_webdav": "Enable WebDAV Configuration Sync",
-        "lbl_webdav_url": "WebDAV Server URL:",
-        "lbl_webdav_user": "Username / Account:",
-        "lbl_webdav_pwd": "Password / Secret:",
-        "lbl_remote_dir": "Remote Directory:",
-        "lbl_max_backups": "Max Backups Retention:",
-        "lbl_auto_sync": "Auto-sync from WebDAV on application startup",
+        # ASR Tab
+        "asr_provider": "ASR Provider:",
+        "asr_doubao_app_id": "Doubao App ID:",
+        "asr_doubao_token": "Access Token:",
+        "asr_doubao_cluster": "Cluster:",
+        "asr_qwen_api_key": "Qwen API Key:",
+        "asr_qwen_app_key": "Qwen App Key:",
+        "asr_mimo_api_key": "MiMo API Key:",
+        "asr_mimo_base_url": "MiMo Base URL:",
+        "asr_mimo_model": "MiMo Model:",
+        "asr_openai_api_key": "Whisper API Key:",
+        "asr_openai_base_url": "Whisper Base URL:",
+        "asr_openai_model": "Whisper Model:",
 
-        # Proxy
-        "lbl_enable_proxy": "Enable Global Network Proxy",
-        "lbl_proxy_protocol": "Proxy Protocol:",
-        "lbl_proxy_host": "Proxy Host:",
-        "lbl_proxy_port": "Proxy Port:",
+        # LLM Tab
+        "llm_enable": "Enable LLM Refinement & Speech Cleaning",
+        "llm_provider": "LLM Provider:",
+        "llm_system_prompt": "System Prompt:",
 
-        # Debug
-        "lbl_enable_debug": "Enable Debug Logging Mode (Log to File)",
-        "lbl_debug_desc": "<b>Note:</b> When Debug Mode is enabled, the app writes timestamped plaintext logs (including ASR recognized text & LLM refined output) to a local <code>logs/</code> directory.<br>Turn OFF Debug Mode during normal usage to protect user privacy.",
+        # WebDAV Tab
+        "webdav_enable": "Enable WebDAV Configuration Sync",
+        "webdav_provider": "WebDAV Provider:",
+        "webdav_server_url": "WebDAV Server URL:",
+        "webdav_username": "Username / Account:",
+        "webdav_password": "Password / Secret:",
+        "webdav_remote_dir": "Remote Directory:",
+        "webdav_max_backups": "Max Backups Retention:",
+        "webdav_auto_sync": "Auto-sync from WebDAV on application startup",
+        "webdav_history_title": "📋 Select WebDAV Backup to Restore",
+        "webdav_history_label": "Remote WebDAV Backups Found:",
 
-        # About
-        "lbl_about_subtitle": "Windows System Tray Voice Input App · PySide6 & Multi-Provider ASR/LLM",
-        "lbl_author": "Author:",
-        "lbl_current_ver": "Current Version:",
-        "lbl_repo": "GitHub Repository:",
-        "lbl_license": "License:"
+        # Proxy Tab
+        "proxy_enable": "Enable Global Network Proxy",
+        "proxy_protocol": "Proxy Protocol:",
+        "proxy_host": "Proxy Host:",
+        "proxy_port": "Proxy Port:",
+
+        # Hotkey & General Tab
+        "hotkey_trigger": "Trigger Hotkey:",
+        "hotkey_position": "Capsule Position:",
+        "hotkey_recording": "🔴 Press any key...",
+        "hotkey_waiting": "[ Waiting key... ]",
+
+        # Debug Tab
+        "debug_enable": "Enable Debug Logging Mode (Log to File)",
+        "debug_desc": "<b>Note:</b> When Debug Mode is enabled, the app writes timestamped plaintext logs (including ASR recognized text & LLM refined output) to a local <code>logs/</code> directory.<br>Turn OFF Debug Mode during normal usage to protect user privacy.",
+
+        # About Tab
+        "about_title": "🎙️ Voice Input",
+        "about_subtitle": "Windows System Tray Voice Input App · PySide6 & Multi-Provider ASR/LLM",
+        "about_author": "Author:",
+        "about_version": "Current Version:",
+        "about_repo": "GitHub Repository:",
+        "about_license": "License:"
     }
 }
 
@@ -189,7 +242,6 @@ class I18nManager:
         lang_dict = TRANSLATIONS.get(self.current_lang, TRANSLATIONS["en_US"])
         if key in lang_dict:
             return lang_dict[key]
-        # Fallback to English
         return TRANSLATIONS["en_US"].get(key, default or key)
 
 i18n = I18nManager.get_instance()

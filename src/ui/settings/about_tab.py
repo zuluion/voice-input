@@ -5,6 +5,7 @@ from PySide6.QtGui import QDesktopServices, QFont
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QMessageBox
 )
+from src.i18n import i18n
 
 def get_current_version() -> str:
     version_file = "VERSION"
@@ -14,7 +15,7 @@ def get_current_version() -> str:
                 return f.read().strip()
         except Exception:
             pass
-    return "2026.07.30.003"
+    return "2026.07.30.007"
 
 class AboutSettingsTab(QWidget):
     def __init__(self, config_manager=None) -> None:
@@ -29,15 +30,15 @@ class AboutSettingsTab(QWidget):
         layout.setSpacing(12)
 
         # Title & Logo
-        title_label = QLabel("🎙️ Voice Input (语音输入法)")
+        self.title_label = QLabel(i18n.t("about_title"))
         title_font = QFont("Segoe UI", 16, QFont.Bold)
-        title_label.setFont(title_font)
-        title_label.setStyleSheet("color: #6366f1;")
-        layout.addWidget(title_label)
+        self.title_label.setFont(title_font)
+        self.title_label.setStyleSheet("color: #6366f1;")
+        layout.addWidget(self.title_label)
 
-        sub_label = QLabel("Windows 系统托盘语音输入法应用 · PySide6 & 多 Provider ASR/LLM 精修")
-        sub_label.setStyleSheet("color: #9ca3af; font-size: 12px;")
-        layout.addWidget(sub_label)
+        self.sub_label = QLabel(i18n.t("about_subtitle"))
+        self.sub_label.setStyleSheet("color: #9ca3af; font-size: 12px;")
+        layout.addWidget(self.sub_label)
 
         layout.addSpacing(10)
 
@@ -45,29 +46,29 @@ class AboutSettingsTab(QWidget):
         info_layout = QVBoxLayout()
         info_layout.setSpacing(8)
 
-        author_label = QLabel(f"<b>Author / 开发者:</b> Zuluion")
-        author_label.setStyleSheet("color: #e5e7eb; font-size: 13px;")
-        info_layout.addWidget(author_label)
+        self.author_label = QLabel(f"<b>{i18n.t('about_author')}</b> Zuluion")
+        self.author_label.setStyleSheet("color: #e5e7eb; font-size: 13px;")
+        info_layout.addWidget(self.author_label)
 
-        ver_label = QLabel(f"<b>Current Version / 当前版本:</b> v{self.version_str}")
-        ver_label.setStyleSheet("color: #e5e7eb; font-size: 13px;")
-        info_layout.addWidget(ver_label)
+        self.ver_label = QLabel(f"<b>{i18n.t('about_version')}</b> v{self.version_str}")
+        self.ver_label.setStyleSheet("color: #e5e7eb; font-size: 13px;")
+        info_layout.addWidget(self.ver_label)
 
-        repo_label = QLabel("<b>GitHub Repository / 官方仓库:</b> <a href='https://github.com/zuluion/voice-input' style='color:#818cf8;'>https://github.com/zuluion/voice-input</a>")
-        repo_label.setOpenExternalLinks(True)
-        repo_label.setStyleSheet("font-size: 13px;")
-        info_layout.addWidget(repo_label)
+        self.repo_label = QLabel(f"<b>{i18n.t('about_repo')}</b> <a href='https://github.com/zuluion/voice-input' style='color:#818cf8;'>https://github.com/zuluion/voice-input</a>")
+        self.repo_label.setOpenExternalLinks(True)
+        self.repo_label.setStyleSheet("font-size: 13px;")
+        info_layout.addWidget(self.repo_label)
 
-        license_label = QLabel("<b>License / 开源协议:</b> MIT License")
-        license_label.setStyleSheet("color: #e5e7eb; font-size: 13px;")
-        info_layout.addWidget(license_label)
+        self.license_label = QLabel(f"<b>{i18n.t('about_license')}</b> MIT License")
+        self.license_label.setStyleSheet("color: #e5e7eb; font-size: 13px;")
+        info_layout.addWidget(self.license_label)
 
         layout.addLayout(info_layout)
         layout.addSpacing(15)
 
         # Check for Updates Button
         btn_layout = QHBoxLayout()
-        self.check_update_btn = QPushButton("🚀 Check for Updates")
+        self.check_update_btn = QPushButton(i18n.t("btn_check_update"))
         self.check_update_btn.setFixedHeight(36)
         self.check_update_btn.clicked.connect(self._check_for_updates)
         btn_layout.addWidget(self.check_update_btn)
@@ -77,7 +78,13 @@ class AboutSettingsTab(QWidget):
         layout.addStretch()
 
     def load_config(self) -> None:
-        pass
+        self.title_label.setText(i18n.t("about_title"))
+        self.sub_label.setText(i18n.t("about_subtitle"))
+        self.author_label.setText(f"<b>{i18n.t('about_author')}</b> Zuluion")
+        self.ver_label.setText(f"<b>{i18n.t('about_version')}</b> v{self.version_str}")
+        self.repo_label.setText(f"<b>{i18n.t('about_repo')}</b> <a href='https://github.com/zuluion/voice-input' style='color:#818cf8;'>https://github.com/zuluion/voice-input</a>")
+        self.license_label.setText(f"<b>{i18n.t('about_license')}</b> MIT License")
+        self.check_update_btn.setText(i18n.t("btn_check_update"))
 
     def save_config(self, cfg: dict) -> None:
         pass

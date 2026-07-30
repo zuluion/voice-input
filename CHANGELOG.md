@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2026.07.30.008] - 2026-07-30
+
+### 🌐 Comprehensive 100% i18n Sub-Page Coverage & Dynamic Retranslation
+- **100% Sub-Page i18n Localization**: Fully refactored all 7 settings sub-tabs (`asr_tab`, `llm_tab`, `webdav_tab`, `proxy_tab`, `hotkey_tab`, `debug_tab`, `about_tab`), dialogs, and form labels to retrieve text dynamically from `i18n.t(...)`.
+- **Dynamic Real-Time UI Retranslation**: Implemented `retranslate_ui()` in `SettingsWindow` so that saving or changing language preferences instantly refreshes all Tab headers, window titles, and action button labels without restarting the app.
+- **Key Parity Verification**: Added key parity test (`test_translation_keys_parity`) ensuring 100% symmetric key coverage between Chinese (`zh_CN`) and English (`en_US`).
+
 ## [2026.07.30.007] - 2026-07-30
 
 ### 🌐 i18n Internationalization & Auto System Language

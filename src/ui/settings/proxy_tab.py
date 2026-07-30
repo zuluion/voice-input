@@ -3,6 +3,7 @@ from PySide6.QtWidgets import (
     QWidget, QFormLayout, QHBoxLayout, QLabel, QLineEdit, QComboBox, QPushButton,
     QCheckBox, QMessageBox
 )
+from src.i18n import i18n
 from src.utils.proxy import apply_proxy_config, test_proxy_connection
 
 class ProxySettingsTab(QWidget):
@@ -14,31 +15,41 @@ class ProxySettingsTab(QWidget):
     def setup_ui(self) -> None:
         layout = QFormLayout(self)
 
-        self.enable_proxy_cb = QCheckBox("Enable Global Network Proxy")
+        self.enable_proxy_cb = QCheckBox(i18n.t("proxy_enable"))
         layout.addRow("", self.enable_proxy_cb)
 
+        self.lbl_protocol = QLabel(i18n.t("proxy_protocol"))
         self.protocol_combo = QComboBox()
         self.protocol_combo.addItems(["http", "socks4", "socks5"])
-        layout.addRow("Proxy Protocol:", self.protocol_combo)
+        layout.addRow(self.lbl_protocol, self.protocol_combo)
 
+        self.lbl_host = QLabel(i18n.t("proxy_host"))
         self.host_input = QLineEdit()
         self.host_input.setPlaceholderText("127.0.0.1")
-        layout.addRow("Proxy Host:", self.host_input)
+        layout.addRow(self.lbl_host, self.host_input)
 
+        self.lbl_port = QLabel(i18n.t("proxy_port"))
         self.port_input = QLineEdit()
         self.port_input.setPlaceholderText("7890")
-        layout.addRow("Proxy Port:", self.port_input)
+        layout.addRow(self.lbl_port, self.port_input)
 
         # Test Proxy Connection Button
         test_layout = QHBoxLayout()
         test_layout.addStretch()
-        self.test_proxy_btn = QPushButton("Test Proxy Connection")
+        self.test_proxy_btn = QPushButton(i18n.t("btn_test_proxy"))
         self.test_proxy_btn.clicked.connect(self._test_proxy)
         test_layout.addWidget(self.test_proxy_btn)
 
         layout.addRow("", test_layout)
 
     def load_config(self) -> None:
+        # Refresh static i18n labels
+        self.enable_proxy_cb.setText(i18n.t("proxy_enable"))
+        self.lbl_protocol.setText(i18n.t("proxy_protocol"))
+        self.lbl_host.setText(i18n.t("proxy_host"))
+        self.lbl_port.setText(i18n.t("proxy_port"))
+        self.test_proxy_btn.setText(i18n.t("btn_test_proxy"))
+
         cfg = self.config_manager.config.get("proxy", {})
         self.enable_proxy_cb.setChecked(cfg.get("enabled", False))
 

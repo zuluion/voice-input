@@ -3,30 +3,31 @@ from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QWidget, QFormLayout, QHBoxLayout, QLabel, QLineEdit, QComboBox, QPushButton, QMessageBox
 )
+from src.i18n import i18n
 from src.asr import create_asr_provider
 
 PROVIDER_DEFAULTS = {
     "xiaomi_mimo": {
-        "label_key": "MiMo API Key:",
+        "label_key_i18n": "asr_mimo_api_key",
         "base_url": "https://api.xiaomimimo.com/v1",
         "model": "mimo-v2.5-asr",
         "has_extra": False
     },
     "openai": {
-        "label_key": "OpenAI API Key:",
+        "label_key_i18n": "asr_openai_api_key",
         "base_url": "https://api.openai.com/v1",
         "model": "whisper-1",
         "has_extra": False
     },
     "doubao": {
-        "label_key": "Access Token:",
+        "label_key_i18n": "asr_doubao_token",
         "base_url": "https://openspeech.bytedance.com/api/v1/vc/asr",
         "model": "volcengine_input_common",
         "has_extra": True,
-        "label_extra": "App ID:"
+        "label_extra_i18n": "asr_doubao_app_id"
     },
     "qwen": {
-        "label_key": "DashScope API Key:",
+        "label_key_i18n": "asr_qwen_api_key",
         "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
         "model": "qwen-audio-asr",
         "has_extra": False
@@ -43,42 +44,45 @@ class ASRSettingsTab(QWidget):
     def setup_ui(self) -> None:
         layout = QFormLayout(self)
 
+        self.lbl_provider = QLabel(i18n.t("asr_provider"))
         self.asr_provider_combo = QComboBox()
         self.asr_provider_combo.addItems(["xiaomi_mimo", "openai", "doubao", "qwen"])
         self.asr_provider_combo.currentTextChanged.connect(self._on_provider_changed)
-        layout.addRow("ASR Provider:", self.asr_provider_combo)
+        layout.addRow(self.lbl_provider, self.asr_provider_combo)
 
         # Dynamic Key Label & Input
-        self.asr_key_label = QLabel("API Key:")
+        self.asr_key_label = QLabel(i18n.t("lbl_api_key"))
         self.asr_key_input = QLineEdit()
         self.asr_key_input.setEchoMode(QLineEdit.Password)
         layout.addRow(self.asr_key_label, self.asr_key_input)
 
         # Extra Input (e.g. Doubao App ID)
-        self.asr_extra_label = QLabel("App ID:")
+        self.asr_extra_label = QLabel(i18n.t("asr_doubao_app_id"))
         self.asr_extra_input = QLineEdit()
         layout.addRow(self.asr_extra_label, self.asr_extra_input)
 
         # Base URL
+        self.lbl_base_url = QLabel(i18n.t("lbl_base_url"))
         self.asr_url_input = QLineEdit()
-        layout.addRow("Base URL:", self.asr_url_input)
+        layout.addRow(self.lbl_base_url, self.asr_url_input)
 
         # Model Name + Fetch Button
+        self.lbl_model_name = QLabel(i18n.t("lbl_model_name"))
         model_layout = QHBoxLayout()
         self.asr_model_combo = QComboBox()
         self.asr_model_combo.setEditable(True)
         model_layout.addWidget(self.asr_model_combo)
 
-        self.fetch_asr_btn = QPushButton("🔄 Fetch Models")
+        self.fetch_asr_btn = QPushButton(i18n.t("btn_fetch_models"))
         self.fetch_asr_btn.clicked.connect(self._fetch_models)
         model_layout.addWidget(self.fetch_asr_btn)
 
-        layout.addRow("Model Name:", model_layout)
+        layout.addRow(self.lbl_model_name, model_layout)
 
         # Test Connection Button
         test_layout = QHBoxLayout()
         test_layout.addStretch()
-        self.test_asr_btn = QPushButton("Test ASR Connection")
+        self.test_asr_btn = QPushButton(i18n.t("btn_test_asr"))
         self.test_asr_btn.clicked.connect(self._test_connection)
         test_layout.addWidget(self.test_asr_btn)
         layout.addRow("", test_layout)
@@ -88,10 +92,10 @@ class ASRSettingsTab(QWidget):
             return
 
         defaults = PROVIDER_DEFAULTS.get(provider, PROVIDER_DEFAULTS["xiaomi_mimo"])
-        self.asr_key_label.setText(defaults["label_key"])
+        self.asr_key_label.setText(i18n.t(defaults["label_key_i18n"]))
 
         if defaults["has_extra"]:
-            self.asr_extra_label.setText(defaults.get("label_extra", "App ID:"))
+            self.asr_extra_label.setText(i18n.t(defaults.get("label_extra_i18n", "asr_doubao_app_id")))
             self.asr_extra_label.show()
             self.asr_extra_input.show()
         else:
@@ -114,6 +118,14 @@ class ASRSettingsTab(QWidget):
 
     def load_config(self) -> None:
         self._updating_ui = True
+
+        # Refresh static i18n labels
+        self.lbl_provider.setText(i18n.t("asr_provider"))
+        self.lbl_base_url.setText(i18n.t("lbl_base_url"))
+        self.lbl_model_name.setText(i18n.t("lbl_model_name"))
+        self.fetch_asr_btn.setText(i18n.t("btn_fetch_models"))
+        self.test_asr_btn.setText(i18n.t("btn_test_asr"))
+
         cfg = self.config_manager.config.get("asr", {})
         provider = cfg.get("provider", "xiaomi_mimo")
         idx = self.asr_provider_combo.findText(provider)

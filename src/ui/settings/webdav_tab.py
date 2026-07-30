@@ -3,6 +3,7 @@ from PySide6.QtWidgets import (
     QWidget, QFormLayout, QHBoxLayout, QLabel, QLineEdit, QComboBox, QSpinBox, QPushButton, QCheckBox,
     QMessageBox, QDialog, QVBoxLayout, QListWidget, QListWidgetItem, QDialogButtonBox
 )
+from src.i18n import i18n
 from src.utils.webdav import WebDAVSync
 
 WEBDAV_PROVIDER_DEFAULTS = {
@@ -21,12 +22,12 @@ WEBDAV_PROVIDER_DEFAULTS = {
 class WebDAVHistoryDialog(QDialog):
     def __init__(self, backups: list[dict], parent=None) -> None:
         super().__init__(parent)
-        self.setWindowTitle("📋 Select WebDAV Backup to Restore")
+        self.setWindowTitle(i18n.t("webdav_history_title"))
         self.setMinimumSize(480, 320)
         self.selected_filename = None
 
         layout = QVBoxLayout(self)
-        layout.addWidget(QLabel("Remote WebDAV Backups Found:"))
+        layout.addWidget(QLabel(i18n.t("webdav_history_label")))
 
         self.list_widget = QListWidget()
         for item in backups:
@@ -62,53 +63,59 @@ class WebDAVSettingsTab(QWidget):
     def setup_ui(self) -> None:
         layout = QFormLayout(self)
 
-        self.enable_webdav_cb = QCheckBox("Enable WebDAV Configuration Sync")
+        self.enable_webdav_cb = QCheckBox(i18n.t("webdav_enable"))
         layout.addRow("", self.enable_webdav_cb)
 
+        self.lbl_provider = QLabel(i18n.t("webdav_provider"))
         self.provider_combo = QComboBox()
         self.provider_combo.addItems(["jianguoyun", "custom"])
         self.provider_combo.currentTextChanged.connect(self._on_provider_changed)
-        layout.addRow("WebDAV Provider:", self.provider_combo)
+        layout.addRow(self.lbl_provider, self.provider_combo)
 
+        self.lbl_server_url = QLabel(i18n.t("webdav_server_url"))
         self.server_url_input = QLineEdit()
         self.server_url_input.setPlaceholderText("https://dav.jianguoyun.com/dav/")
-        layout.addRow("WebDAV Server URL:", self.server_url_input)
+        layout.addRow(self.lbl_server_url, self.server_url_input)
 
+        self.lbl_username = QLabel(i18n.t("webdav_username"))
         self.username_input = QLineEdit()
         self.username_input.setPlaceholderText("your_account@example.com")
-        layout.addRow("Username / Account:", self.username_input)
+        layout.addRow(self.lbl_username, self.username_input)
 
+        self.lbl_password = QLabel(i18n.t("webdav_password"))
         self.password_input = QLineEdit()
         self.password_input.setEchoMode(QLineEdit.Password)
         self.password_input.setPlaceholderText("App Password / Secret")
-        layout.addRow("Password / Secret:", self.password_input)
+        layout.addRow(self.lbl_password, self.password_input)
 
+        self.lbl_remote_dir = QLabel(i18n.t("webdav_remote_dir"))
         self.remote_dir_input = QLineEdit()
         self.remote_dir_input.setPlaceholderText("/VoiceInput")
-        layout.addRow("Remote Directory:", self.remote_dir_input)
+        layout.addRow(self.lbl_remote_dir, self.remote_dir_input)
 
+        self.lbl_max_backups = QLabel(i18n.t("webdav_max_backups"))
         self.max_backups_spin = QSpinBox()
         self.max_backups_spin.setRange(1, 50)
         self.max_backups_spin.setValue(5)
-        layout.addRow("Max Backups Retention:", self.max_backups_spin)
+        layout.addRow(self.lbl_max_backups, self.max_backups_spin)
 
-        self.auto_sync_cb = QCheckBox("Auto-sync from WebDAV on application startup")
+        self.auto_sync_cb = QCheckBox(i18n.t("webdav_auto_sync"))
         layout.addRow("", self.auto_sync_cb)
 
         # Action Buttons
         btn_layout1 = QHBoxLayout()
-        self.upload_btn = QPushButton("📤 Upload Current Config")
+        self.upload_btn = QPushButton(i18n.t("btn_upload_webdav"))
         self.upload_btn.clicked.connect(self._upload_config)
         btn_layout1.addWidget(self.upload_btn)
 
-        self.download_btn = QPushButton("📥 Download Latest Config")
+        self.download_btn = QPushButton(i18n.t("btn_download_webdav"))
         self.download_btn.clicked.connect(self._download_config)
         btn_layout1.addWidget(self.download_btn)
 
         layout.addRow("", btn_layout1)
 
         btn_layout2 = QHBoxLayout()
-        self.list_history_btn = QPushButton("📋 View Remote Backups & Restore")
+        self.list_history_btn = QPushButton(i18n.t("btn_history_webdav"))
         self.list_history_btn.clicked.connect(self._list_history)
         btn_layout2.addWidget(self.list_history_btn)
 
@@ -135,6 +142,21 @@ class WebDAVSettingsTab(QWidget):
 
     def load_config(self) -> None:
         self._updating_ui = True
+
+        # Refresh static i18n labels
+        self.enable_webdav_cb.setText(i18n.t("webdav_enable"))
+        self.lbl_provider.setText(i18n.t("webdav_provider"))
+        self.lbl_server_url.setText(i18n.t("webdav_server_url"))
+        self.lbl_username.setText(i18n.t("webdav_username"))
+        self.lbl_password.setText(i18n.t("webdav_password"))
+        self.lbl_remote_dir.setText(i18n.t("webdav_remote_dir"))
+        self.lbl_max_backups.setText(i18n.t("webdav_max_backups"))
+        self.auto_sync_cb.setText(i18n.t("webdav_auto_sync"))
+
+        self.upload_btn.setText(i18n.t("btn_upload_webdav"))
+        self.download_btn.setText(i18n.t("btn_download_webdav"))
+        self.list_history_btn.setText(i18n.t("btn_history_webdav"))
+
         cfg = self.config_manager.config.get("webdav", {})
         self.enable_webdav_cb.setChecked(cfg.get("enabled", False))
 

@@ -126,7 +126,6 @@ class SettingsWindow(QMainWindow):
     def __init__(self, config_manager, parent=None) -> None:
         super().__init__(parent)
         self.config_manager = config_manager
-        self.setWindowTitle(f"{i18n.t('app_title')} - {i18n.t('tray_settings').rstrip('.')}")
         self.resize(640, 540)
         self.setStyleSheet(DARK_QSS)
 
@@ -148,24 +147,24 @@ class SettingsWindow(QMainWindow):
         self.debug_tab = DebugSettingsTab(self.config_manager)
         self.about_tab = AboutSettingsTab(self.config_manager)
 
-        self.tabs.addTab(self.asr_tab, i18n.t("tab_asr"))
-        self.tabs.addTab(self.llm_tab, i18n.t("tab_llm"))
-        self.tabs.addTab(self.webdav_tab, i18n.t("tab_webdav"))
-        self.tabs.addTab(self.proxy_tab, i18n.t("tab_proxy"))
-        self.tabs.addTab(self.hotkey_tab, i18n.t("tab_hotkey"))
-        self.tabs.addTab(self.debug_tab, i18n.t("tab_debug"))
-        self.tabs.addTab(self.about_tab, i18n.t("tab_about"))
+        self.tabs.addTab(self.asr_tab, "")
+        self.tabs.addTab(self.llm_tab, "")
+        self.tabs.addTab(self.webdav_tab, "")
+        self.tabs.addTab(self.proxy_tab, "")
+        self.tabs.addTab(self.hotkey_tab, "")
+        self.tabs.addTab(self.debug_tab, "")
+        self.tabs.addTab(self.about_tab, "")
 
         # Bottom Action Bar
         action_layout = QHBoxLayout()
         action_layout.addStretch()
 
-        self.cancel_btn = QPushButton(i18n.t("btn_cancel"))
+        self.cancel_btn = QPushButton("")
         self.cancel_btn.setFixedWidth(90)
         self.cancel_btn.clicked.connect(self.close)
         action_layout.addWidget(self.cancel_btn)
 
-        self.save_btn = QPushButton(i18n.t("btn_save"))
+        self.save_btn = QPushButton("")
         self.save_btn.setObjectName("SaveBtn")
         self.save_btn.setFixedWidth(110)
         self.save_btn.clicked.connect(self._save_config)
@@ -175,6 +174,19 @@ class SettingsWindow(QMainWindow):
 
         self._load_config()
 
+    def retranslate_ui(self) -> None:
+        self.setWindowTitle(f"{i18n.t('app_title')} - {i18n.t('tray_settings').rstrip('.')}")
+        self.tabs.setTabText(0, i18n.t("tab_asr"))
+        self.tabs.setTabText(1, i18n.t("tab_llm"))
+        self.tabs.setTabText(2, i18n.t("tab_webdav"))
+        self.tabs.setTabText(3, i18n.t("tab_proxy"))
+        self.tabs.setTabText(4, i18n.t("tab_hotkey"))
+        self.tabs.setTabText(5, i18n.t("tab_debug"))
+        self.tabs.setTabText(6, i18n.t("tab_about"))
+
+        self.cancel_btn.setText(i18n.t("btn_cancel"))
+        self.save_btn.setText(i18n.t("btn_save"))
+
     def _load_config(self) -> None:
         self.asr_tab.load_config()
         self.llm_tab.load_config()
@@ -183,6 +195,7 @@ class SettingsWindow(QMainWindow):
         self.hotkey_tab.load_config()
         self.debug_tab.load_config()
         self.about_tab.load_config()
+        self.retranslate_ui()
 
     def _save_config(self) -> None:
         cfg = self.config_manager.config
@@ -196,6 +209,11 @@ class SettingsWindow(QMainWindow):
 
         self.config_manager.save_config(cfg)
         print("[Settings UI] Configuration saved to disk.")
+
+        # Retranslate window after saving language
+        self.retranslate_ui()
+        self._load_config()
+
         self.config_saved.emit()
 
         QMessageBox.information(self, i18n.t("app_title"), i18n.t("btn_save") + " OK!")

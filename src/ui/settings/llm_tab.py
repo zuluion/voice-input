@@ -4,6 +4,7 @@ from PySide6.QtWidgets import (
     QWidget, QFormLayout, QHBoxLayout, QLabel, QLineEdit, QComboBox, QPushButton,
     QCheckBox, QPlainTextEdit, QMessageBox
 )
+from src.i18n import i18n
 from src.refine.llm import LLMRefiner, DEFAULT_SYSTEM_PROMPT
 
 LLM_PROVIDER_DEFAULTS = {
@@ -43,39 +44,43 @@ class LLMSettingsTab(QWidget):
     def setup_ui(self) -> None:
         layout = QFormLayout(self)
 
-        self.enable_llm_cb = QCheckBox("Enable LLM Refinement & Polishing")
+        self.enable_llm_cb = QCheckBox(i18n.t("llm_enable"))
         layout.addRow("", self.enable_llm_cb)
 
+        self.lbl_provider = QLabel(i18n.t("llm_provider"))
         self.llm_provider_combo = QComboBox()
         self.llm_provider_combo.addItems(["openai", "deepseek", "xiaomi", "qwen", "ollama", "custom"])
         self.llm_provider_combo.currentTextChanged.connect(self._on_provider_changed)
-        layout.addRow("LLM Provider:", self.llm_provider_combo)
+        layout.addRow(self.lbl_provider, self.llm_provider_combo)
 
+        self.lbl_api_key = QLabel(i18n.t("lbl_api_key"))
         self.llm_key_input = QLineEdit()
         self.llm_key_input.setEchoMode(QLineEdit.Password)
-        layout.addRow("API Key:", self.llm_key_input)
+        layout.addRow(self.lbl_api_key, self.llm_key_input)
 
+        self.lbl_base_url = QLabel(i18n.t("lbl_base_url"))
         self.llm_url_input = QLineEdit()
-        layout.addRow("Base URL:", self.llm_url_input)
+        layout.addRow(self.lbl_base_url, self.llm_url_input)
 
+        self.lbl_model_name = QLabel(i18n.t("lbl_model_name"))
         model_layout = QHBoxLayout()
         self.llm_model_combo = QComboBox()
         self.llm_model_combo.setEditable(True)
         model_layout.addWidget(self.llm_model_combo)
 
-        self.fetch_llm_btn = QPushButton("🔄 Fetch Models")
+        self.fetch_llm_btn = QPushButton(i18n.t("btn_fetch_models"))
         self.fetch_llm_btn.clicked.connect(self._fetch_models)
         model_layout.addWidget(self.fetch_llm_btn)
 
-        layout.addRow("Model Name:", model_layout)
+        layout.addRow(self.lbl_model_name, model_layout)
 
         # System Prompt Section
         prompt_header_layout = QHBoxLayout()
-        prompt_label = QLabel("System Prompt Rules:")
-        self.reset_prompt_btn = QPushButton("↺ Reset Prompt")
-        self.reset_prompt_btn.setFixedWidth(110)
+        self.prompt_label = QLabel(i18n.t("llm_system_prompt"))
+        self.reset_prompt_btn = QPushButton(i18n.t("btn_reset_prompt"))
+        self.reset_prompt_btn.setFixedWidth(120)
         self.reset_prompt_btn.clicked.connect(self._reset_prompt)
-        prompt_header_layout.addWidget(prompt_label)
+        prompt_header_layout.addWidget(self.prompt_label)
         prompt_header_layout.addStretch()
         prompt_header_layout.addWidget(self.reset_prompt_btn)
 
@@ -88,7 +93,7 @@ class LLMSettingsTab(QWidget):
         # Test Connection Button
         test_layout = QHBoxLayout()
         test_layout.addStretch()
-        self.test_llm_btn = QPushButton("Test LLM Connection")
+        self.test_llm_btn = QPushButton(i18n.t("btn_test_llm"))
         self.test_llm_btn.clicked.connect(self._test_connection)
         test_layout.addWidget(self.test_llm_btn)
 
@@ -114,6 +119,18 @@ class LLMSettingsTab(QWidget):
 
     def load_config(self) -> None:
         self._updating_ui = True
+
+        # Refresh static i18n labels
+        self.enable_llm_cb.setText(i18n.t("llm_enable"))
+        self.lbl_provider.setText(i18n.t("llm_provider"))
+        self.lbl_api_key.setText(i18n.t("lbl_api_key"))
+        self.lbl_base_url.setText(i18n.t("lbl_base_url"))
+        self.lbl_model_name.setText(i18n.t("lbl_model_name"))
+        self.fetch_llm_btn.setText(i18n.t("btn_fetch_models"))
+        self.prompt_label.setText(i18n.t("llm_system_prompt"))
+        self.reset_prompt_btn.setText(i18n.t("btn_reset_prompt"))
+        self.test_llm_btn.setText(i18n.t("btn_test_llm"))
+
         cfg = self.config_manager.config.get("llm", {})
         self.enable_llm_cb.setChecked(cfg.get("enabled", True))
 

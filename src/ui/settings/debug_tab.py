@@ -4,6 +4,7 @@ from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import (
     QWidget, QFormLayout, QHBoxLayout, QLabel, QPushButton, QCheckBox, QMessageBox
 )
+from src.i18n import i18n
 from src.utils.logger import logger
 
 class DebugSettingsTab(QWidget):
@@ -15,23 +16,24 @@ class DebugSettingsTab(QWidget):
     def setup_ui(self) -> None:
         layout = QFormLayout(self)
 
-        self.enable_debug_cb = QCheckBox("Enable Debug Logging Mode (Log to File)")
+        self.enable_debug_cb = QCheckBox(i18n.t("debug_enable"))
         layout.addRow("", self.enable_debug_cb)
 
-        desc_label = QLabel(
-            "<b>Note:</b> When Debug Mode is enabled, the app writes timestamped plaintext logs "
-            "(including ASR recognized text & LLM refined output) to a local <code>logs/</code> directory.<br>"
-            "Turn OFF Debug Mode during normal usage to protect user privacy."
-        )
-        desc_label.setWordWrap(True)
-        desc_label.setStyleSheet("color: #9ca3af; font-size: 12px; margin-top: 6px; margin-bottom: 12px;")
-        layout.addRow(desc_label)
+        self.desc_label = QLabel(i18n.t("debug_desc"))
+        self.desc_label.setWordWrap(True)
+        self.desc_label.setStyleSheet("color: #9ca3af; font-size: 12px; margin-top: 6px; margin-bottom: 12px;")
+        layout.addRow(self.desc_label)
 
-        open_logs_btn = QPushButton("📂 Open Logs Directory")
-        open_logs_btn.clicked.connect(self._open_logs_dir)
-        layout.addRow("", open_logs_btn)
+        self.open_logs_btn = QPushButton(i18n.t("btn_open_logs_dir"))
+        self.open_logs_btn.clicked.connect(self._open_logs_dir)
+        layout.addRow("", self.open_logs_btn)
 
     def load_config(self) -> None:
+        # Refresh static i18n labels
+        self.enable_debug_cb.setText(i18n.t("debug_enable"))
+        self.desc_label.setText(i18n.t("debug_desc"))
+        self.open_logs_btn.setText(i18n.t("btn_open_logs_dir"))
+
         cfg = self.config_manager.config.get("debug", {})
         self.enable_debug_cb.setChecked(cfg.get("enabled", False))
 
