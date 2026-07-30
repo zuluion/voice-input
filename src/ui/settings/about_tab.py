@@ -1,27 +1,18 @@
 import os
 import requests
 from PySide6.QtCore import Qt, QUrl
-from PySide6.QtGui import QDesktopServices, QFont
+from PySide6.QtGui import QDesktopServices, QFont, QPixmap
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QMessageBox
 )
 from src.i18n import i18n
-
-def get_current_version() -> str:
-    version_file = "VERSION"
-    if os.path.exists(version_file):
-        try:
-            with open(version_file, "r", encoding="utf-8") as f:
-                return f.read().strip()
-        except Exception:
-            pass
-    return "2026.07.30.007"
+from src.utils.version import get_app_version, get_logo_path
 
 class AboutSettingsTab(QWidget):
     def __init__(self, config_manager=None) -> None:
         super().__init__()
         self.config_manager = config_manager
-        self.version_str = get_current_version()
+        self.version_str = get_app_version()
         self.setup_ui()
 
     def setup_ui(self) -> None:
@@ -29,17 +20,35 @@ class AboutSettingsTab(QWidget):
         layout.setContentsMargins(20, 20, 20, 20)
         layout.setSpacing(12)
 
-        # Title & Logo
+        # Header Container with Logo
+        header_layout = QHBoxLayout()
+        header_layout.setSpacing(16)
+
+        logo_path = get_logo_path()
+        if logo_path and os.path.exists(logo_path):
+            self.logo_label = QLabel()
+            pixmap = QPixmap(logo_path)
+            if not pixmap.isNull():
+                self.logo_label.setPixmap(pixmap.scaled(64, 64, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+                header_layout.addWidget(self.logo_label)
+
+        title_vbox = QVBoxLayout()
+        title_vbox.setSpacing(4)
+
         self.title_label = QLabel(i18n.t("about_title"))
-        title_font = QFont("Segoe UI", 16, QFont.Bold)
+        title_font = QFont("Segoe UI", 18, QFont.Bold)
         self.title_label.setFont(title_font)
         self.title_label.setStyleSheet("color: #6366f1;")
-        layout.addWidget(self.title_label)
+        title_vbox.addWidget(self.title_label)
 
         self.sub_label = QLabel(i18n.t("about_subtitle"))
-        self.sub_label.setStyleSheet("color: #9ca3af; font-size: 12px;")
-        layout.addWidget(self.sub_label)
+        self.sub_label.setStyleSheet("color: #9ca3af; font-size: 13px;")
+        title_vbox.addWidget(self.sub_label)
 
+        header_layout.addLayout(title_vbox)
+        header_layout.addStretch()
+
+        layout.addLayout(header_layout)
         layout.addSpacing(10)
 
         # Info Cards
@@ -78,6 +87,7 @@ class AboutSettingsTab(QWidget):
         layout.addStretch()
 
     def load_config(self) -> None:
+        self.version_str = get_app_version()
         self.title_label.setText(i18n.t("about_title"))
         self.sub_label.setText(i18n.t("about_subtitle"))
         self.author_label.setText(f"<b>{i18n.t('about_author')}</b> Zuluion")
@@ -109,3 +119,4 @@ class AboutSettingsTab(QWidget):
                 QMessageBox.warning(self, "Check Failed", f"HTTP Status: {resp.status_code}")
         except Exception as e:
             QMessageBox.warning(self, "Check Failed", f"Network Exception:\n{str(e)}")
+

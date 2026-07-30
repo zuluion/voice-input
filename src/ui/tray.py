@@ -1,9 +1,17 @@
+import os
 from PySide6.QtCore import QObject, Signal
 from PySide6.QtGui import QIcon, QPixmap, QColor, QPainter
 from PySide6.QtWidgets import QSystemTrayIcon, QMenu, QWidget
 from src.i18n import i18n
+from src.utils.version import get_logo_path
 
 def create_default_icon() -> QIcon:
+    logo_path = get_logo_path()
+    if logo_path and os.path.exists(logo_path):
+        icon = QIcon(logo_path)
+        if not icon.isNull():
+            return icon
+
     pixmap = QPixmap(32, 32)
     pixmap.fill(QColor(0, 0, 0, 0))
     painter = QPainter(pixmap)

@@ -5,6 +5,15 @@ from src.utils.logger import logger
 def get_current_proxy_str() -> str:
     return os.environ.get("HTTPS_PROXY") or os.environ.get("HTTP_PROXY") or os.environ.get("ALL_PROXY") or ""
 
+def get_requests_proxies() -> dict:
+    proxy_str = get_current_proxy_str()
+    if proxy_str:
+        return {
+            "http": proxy_str,
+            "https": proxy_str
+        }
+    return None
+
 def apply_proxy_config(proxy_config: dict) -> None:
     enabled = proxy_config.get("enabled", False)
     protocol = proxy_config.get("protocol", "http").lower()
@@ -53,3 +62,7 @@ def test_proxy_connection(proxy_config: dict) -> tuple[bool, str]:
     except Exception as e:
         logger.log("Network Proxy Test", f"Proxy connection EXCEPTION: {str(e)}")
         return False, f"Proxy connection failed:\n{str(e)}"
+
+# Prevent pytest from mistaking this helper function for a test case
+test_proxy_connection.__test__ = False
+

@@ -26,9 +26,8 @@ class LLMRefiner:
         self.enabled = self.config.get("enabled", True)
         self.system_prompt = self.config.get("system_prompt", "").strip() or DEFAULT_SYSTEM_PROMPT
 
-        # Support provider mode
-        provider = self.config.get("provider", "openai")
-        provider_cfg = self.config.get(provider, {})
+        self.provider = self.config.get("provider", "openai")
+        provider_cfg = self.config.get(self.provider, {})
 
         self.api_key = provider_cfg.get("api_key") or self.config.get("api_key", "")
         self.base_url = (provider_cfg.get("base_url") or self.config.get("base_url", "https://api.openai.com/v1")).rstrip("/")
@@ -43,6 +42,11 @@ class LLMRefiner:
             logger.log("LLM Refine", "LLM refinement is disabled in settings. Skipping LLM.")
             return transcript
 
+        # 1. Local Model Provider Handling
+        if self.provider == "local":
+            return self._refine_local(transcript)
+
+        # 2. Remote API Provider Handling
         if not self.api_key and "localhost" not in self.base_url and "127.0.0.1" not in self.base_url:
             logger.log("LLM Refine", "LLM API Key is empty. Skipping LLM refinement.")
             return transcript
@@ -91,3 +95,51 @@ class LLMRefiner:
             return transcript
 
         return transcript
+
+    def _refine_local(self, transcript: str) -> str:
+        """运行本地 GGUF 模型纠错与精修。"""
+        from src.utils.model_downloader import is_model_downloaded, get_model_file_path
+        
+        model_id = self.model
+        if not is_model_downloaded(model_id):
+            logger.log("LLM Refine", f"Local model '{model_id}' is not downloaded yet. Skipping refinement.")
+            return transcript
+
+        model_path = get_model_file_path(model_id)
+        logger.log("LLM Refine", f"Refining using local model '{model_id}' at path: {model_path}")
+
+        try:
+            # 尝试使用 llama-cpp-python 本地推理
+            from llama_cpp import Llama
+            llm = Llama(model_path=model_path, verbose=False, n_ctx=2048)
+            prompt = f"<|im_start|>system\n{self.system_prompt}<|im_end|>\n<|im_start|>user\n{transcript}<|im_end|>\n<|im_start|>assistant\n"
+            output = llm(prompt, max_tokens=512, temperature=0.2, stop=["<|im_end|>"])
+            
+            refined = output["choices"][0]["text"].strip()
+            if refined and refined != transcript:
+                logger.log("LLM Refine", f"Local Refined Output: '{refined}'")
+                return refined
+        except ImportError:
+            logger.log("LLM Refine", "llama-cpp-python is not installed. Falling back to local HTTP endpoint if available.")
+            # 尝试通过本地默认 HTTP API 请求
+            try:
+                local_url = "http://127.0.0.1:8080/v1/chat/completions"
+                payload = {
+                    "messages": [
+                        {"role": "system", "content": self.system_prompt},
+                        {"role": "user", "content": transcript}
+                    ],
+                    "temperature": 0.2
+                }
+                res = requests.post(local_url, json=payload, timeout=8)
+                if res.status_code == 200:
+                    refined = res.json()["choices"][0]["message"]["content"].strip()
+                    if refined:
+                        return refined
+            except Exception as http_err:
+                logger.log("LLM Refine", f"Local HTTP endpoint call failed: {http_err}")
+        except Exception as e:
+            logger.log("LLM Refine", f"Local GGUF model execution error: {e}")
+
+        return transcript
+

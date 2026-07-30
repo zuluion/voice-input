@@ -1,3 +1,4 @@
+import os
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QIcon, QFont
 from PySide6.QtWidgets import (
@@ -5,6 +6,7 @@ from PySide6.QtWidgets import (
 )
 
 from src.i18n import i18n
+from src.utils.version import get_logo_path
 from src.ui.settings.asr_tab import ASRSettingsTab
 from src.ui.settings.llm_tab import LLMSettingsTab
 from src.ui.settings.webdav_tab import WebDAVSettingsTab
@@ -176,6 +178,10 @@ class SettingsWindow(QMainWindow):
 
     def retranslate_ui(self) -> None:
         self.setWindowTitle(f"{i18n.t('app_title')} - {i18n.t('tray_settings').rstrip('.')}")
+        logo_path = get_logo_path()
+        if logo_path and os.path.exists(logo_path):
+            self.setWindowIcon(QIcon(logo_path))
+
         self.tabs.setTabText(0, i18n.t("tab_asr"))
         self.tabs.setTabText(1, i18n.t("tab_llm"))
         self.tabs.setTabText(2, i18n.t("tab_webdav"))

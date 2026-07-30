@@ -73,6 +73,9 @@ DEFAULT_CONFIG: Dict[str, Any] = {
             "base_url": "http://localhost:11434/v1",
             "model": "qwen2.5:7b"
         },
+        "local": {
+            "model": "qwen2.5-0.5b-instruct"
+        },
         "custom": {
             "api_key": "",
             "base_url": "https://api.openai.com/v1",

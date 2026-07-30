@@ -208,9 +208,23 @@ class VoiceInputController(QObject):
         self.hotkey_listener.stop()
         QApplication.quit()
 
+import ctypes
+from PySide6.QtGui import QIcon
+from src.utils.version import get_logo_path
+
+# Set explicit Windows AppUserModelID for proper Taskbar icon grouping and rendering
+try:
+    ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("Zuluion.VoiceInput.App.1")
+except Exception:
+    pass
+
 def main() -> None:
     app = QApplication(sys.argv)
     app.setQuitOnLastWindowClosed(False)
+
+    logo_path = get_logo_path()
+    if logo_path and os.path.exists(logo_path):
+        app.setWindowIcon(QIcon(logo_path))
 
     controller = VoiceInputController()
     controller.start()

@@ -1,11 +1,13 @@
+import threading
 import requests
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QThread, Signal
 from PySide6.QtWidgets import (
-    QWidget, QFormLayout, QHBoxLayout, QLabel, QLineEdit, QComboBox, QPushButton,
-    QCheckBox, QPlainTextEdit, QMessageBox
+    QWidget, QFormLayout, QHBoxLayout, QVBoxLayout, QLabel, QLineEdit, QComboBox, QPushButton,
+    QCheckBox, QPlainTextEdit, QMessageBox, QProgressDialog
 )
 from src.i18n import i18n
 from src.refine.llm import LLMRefiner, DEFAULT_SYSTEM_PROMPT
+from src.utils.model_downloader import PRESET_MODELS, is_model_downloaded, download_model, delete_model, get_model_file_path
 
 LLM_PROVIDER_DEFAULTS = {
     "openai": {
@@ -28,17 +30,45 @@ LLM_PROVIDER_DEFAULTS = {
         "base_url": "http://localhost:11434/v1",
         "model": "qwen2.5:7b"
     },
+    "local": {
+        "base_url": "local",
+        "model": "qwen2.5-0.5b-instruct"
+    },
     "custom": {
         "base_url": "https://api.openai.com/v1",
         "model": "gpt-4o-mini"
     }
 }
 
+class ModelDownloadThread(QThread):
+    progress_signal = Signal(int, int, int)
+    finished_signal = Signal(bool, str)
+
+    def __init__(self, model_id: str):
+        super().__init__()
+        self.model_id = model_id
+        self._is_cancelled = False
+
+    def run(self):
+        def cb(downloaded, total, percent):
+            self.progress_signal.emit(downloaded, total, percent)
+
+        def cancel_check():
+            return self._is_cancelled
+
+        ok, msg = download_model(self.model_id, progress_callback=cb, cancel_checker=cancel_check)
+        self.finished_signal.emit(ok, msg)
+
+    def cancel(self):
+        self._is_cancelled = True
+
 class LLMSettingsTab(QWidget):
     def __init__(self, config_manager) -> None:
         super().__init__()
         self.config_manager = config_manager
         self._updating_ui = False
+        self.download_thread = None
+        self.progress_dialog = None
         self.setup_ui()
 
     def setup_ui(self) -> None:
@@ -49,10 +79,11 @@ class LLMSettingsTab(QWidget):
 
         self.lbl_provider = QLabel(i18n.t("llm_provider"))
         self.llm_provider_combo = QComboBox()
-        self.llm_provider_combo.addItems(["openai", "deepseek", "xiaomi", "qwen", "ollama", "custom"])
+        self.llm_provider_combo.addItems(["openai", "deepseek", "xiaomi", "qwen", "ollama", "local", "custom"])
         self.llm_provider_combo.currentTextChanged.connect(self._on_provider_changed)
         layout.addRow(self.lbl_provider, self.llm_provider_combo)
 
+        # Standard Remote API Controls
         self.lbl_api_key = QLabel(i18n.t("lbl_api_key"))
         self.llm_key_input = QLineEdit()
         self.llm_key_input.setEchoMode(QLineEdit.Password)
@@ -66,6 +97,7 @@ class LLMSettingsTab(QWidget):
         model_layout = QHBoxLayout()
         self.llm_model_combo = QComboBox()
         self.llm_model_combo.setEditable(True)
+        self.llm_model_combo.currentTextChanged.connect(self._on_model_selection_changed)
         model_layout.addWidget(self.llm_model_combo)
 
         self.fetch_llm_btn = QPushButton(i18n.t("btn_fetch_models"))
@@ -73,6 +105,25 @@ class LLMSettingsTab(QWidget):
         model_layout.addWidget(self.fetch_llm_btn)
 
         layout.addRow(self.lbl_model_name, model_layout)
+
+        # Local Model Specific Controls
+        self.lbl_local_status_title = QLabel(i18n.t("lbl_local_model_status"))
+        self.lbl_local_status_val = QLabel()
+        self.lbl_local_status_val.setStyleSheet("font-weight: bold;")
+        layout.addRow(self.lbl_local_status_title, self.lbl_local_status_val)
+
+        local_btn_layout = QHBoxLayout()
+        self.download_model_btn = QPushButton(i18n.t("btn_download_local_model"))
+        self.download_model_btn.clicked.connect(self._download_local_model)
+        local_btn_layout.addWidget(self.download_model_btn)
+
+        self.delete_model_btn = QPushButton(i18n.t("btn_delete_local_model"))
+        self.delete_model_btn.setStyleSheet("color: #ef4444;")
+        self.delete_model_btn.clicked.connect(self._delete_local_model)
+        local_btn_layout.addWidget(self.delete_model_btn)
+        local_btn_layout.addStretch()
+
+        layout.addRow("", local_btn_layout)
 
         # System Prompt Section
         prompt_header_layout = QHBoxLayout()
@@ -87,7 +138,7 @@ class LLMSettingsTab(QWidget):
         layout.addRow(prompt_header_layout)
 
         self.prompt_edit = QPlainTextEdit()
-        self.prompt_edit.setMinimumHeight(130)
+        self.prompt_edit.setMinimumHeight(120)
         layout.addRow(self.prompt_edit)
 
         # Test Connection Button
@@ -103,6 +154,18 @@ class LLMSettingsTab(QWidget):
         if self._updating_ui:
             return
 
+        is_local = (provider == "local")
+        self.lbl_api_key.setVisible(not is_local)
+        self.llm_key_input.setVisible(not is_local)
+        self.lbl_base_url.setVisible(not is_local)
+        self.llm_url_input.setVisible(not is_local)
+        self.fetch_llm_btn.setVisible(not is_local)
+
+        self.lbl_local_status_title.setVisible(is_local)
+        self.lbl_local_status_val.setVisible(is_local)
+        self.download_model_btn.setVisible(is_local)
+        self.delete_model_btn.setVisible(is_local)
+
         defaults = LLM_PROVIDER_DEFAULTS.get(provider, LLM_PROVIDER_DEFAULTS["openai"])
         saved_provider_cfg = self.config_manager.get("llm", provider, default={})
 
@@ -115,18 +178,125 @@ class LLMSettingsTab(QWidget):
 
         model_val = saved_model if saved_model else defaults["model"]
         self.llm_model_combo.clear()
-        self.llm_model_combo.setEditText(model_val)
+
+        if is_local:
+            self.llm_model_combo.setEditable(False)
+            self.llm_model_combo.addItems(list(PRESET_MODELS.keys()))
+            idx = self.llm_model_combo.findText(model_val)
+            if idx >= 0:
+                self.llm_model_combo.setCurrentIndex(idx)
+            else:
+                self.llm_model_combo.setCurrentIndex(0)
+            self._update_local_model_status()
+        else:
+            self.llm_model_combo.setEditable(True)
+            self.llm_model_combo.setEditText(model_val)
+
+    def _on_model_selection_changed(self, model_id: str) -> None:
+        if self.llm_provider_combo.currentText() == "local":
+            self._update_local_model_status()
+
+    def _update_local_model_status(self) -> None:
+        model_id = self.llm_model_combo.currentText().strip()
+        if not model_id:
+            return
+
+        downloaded = is_model_downloaded(model_id)
+        if downloaded:
+            fpath = get_model_file_path(model_id)
+            self.lbl_local_status_val.setText(i18n.t("local_model_ready"))
+            self.lbl_local_status_val.setStyleSheet("color: #10b981; font-weight: bold;")
+            self.download_model_btn.setEnabled(False)
+            self.delete_model_btn.setEnabled(True)
+        else:
+            info = PRESET_MODELS.get(model_id, {})
+            sz = info.get("size_str", "Unknown")
+            self.lbl_local_status_val.setText(f"{i18n.t('local_model_missing')} ({sz})")
+            self.lbl_local_status_val.setStyleSheet("color: #f59e0b; font-weight: bold;")
+            self.download_model_btn.setEnabled(True)
+            self.delete_model_btn.setEnabled(False)
+
+    def _download_local_model(self) -> None:
+        model_id = self.llm_model_combo.currentText().strip()
+        info = PRESET_MODELS.get(model_id)
+        if not info:
+            QMessageBox.warning(self, "Error", f"Unknown model ID: {model_id}")
+            return
+
+        msg = i18n.t("confirm_download_model_msg").format(
+            model_id=model_id,
+            size_str=info["size_str"]
+        )
+        reply = QMessageBox.question(
+            self,
+            i18n.t("confirm_download_model_title"),
+            msg,
+            QMessageBox.Yes | QMessageBox.No
+        )
+
+        if reply != QMessageBox.Yes:
+            return
+
+        # Start Async Download with Progress Dialog
+        self.progress_dialog = QProgressDialog(f"Downloading {model_id}...", "Cancel", 0, 100, self)
+        self.progress_dialog.setWindowModality(Qt.WindowModal)
+        self.progress_dialog.setAutoClose(True)
+
+        self.download_thread = ModelDownloadThread(model_id)
+        self.download_thread.progress_signal.connect(self._on_download_progress)
+        self.download_thread.finished_signal.connect(self._on_download_finished)
+        self.progress_dialog.canceled.connect(self.download_thread.cancel)
+
+        self.download_thread.start()
+        self.progress_dialog.show()
+
+    def _on_download_progress(self, downloaded: int, total: int, percent: int) -> None:
+        if self.progress_dialog:
+            mb_dl = downloaded / (1024 * 1024)
+            mb_tot = total / (1024 * 1024)
+            self.progress_dialog.setLabelText(f"Downloading {self.download_thread.model_id}: {mb_dl:.1f} MB / {mb_tot:.1f} MB ({percent}%)")
+            self.progress_dialog.setValue(percent)
+
+    def _on_download_finished(self, ok: bool, msg: str) -> None:
+        if self.progress_dialog:
+            self.progress_dialog.close()
+        self._update_local_model_status()
+
+        if ok:
+            QMessageBox.information(self, "Download Complete", f"Local model '{self.download_thread.model_id}' downloaded successfully!")
+        else:
+            QMessageBox.warning(self, "Download Failed", f"Model download failed or cancelled:\n{msg}")
+
+    def _delete_local_model(self) -> None:
+        model_id = self.llm_model_combo.currentText().strip()
+        msg = i18n.t("confirm_delete_model_msg").format(model_id=model_id)
+        reply = QMessageBox.question(
+            self,
+            i18n.t("confirm_delete_model_title"),
+            msg,
+            QMessageBox.Yes | QMessageBox.No
+        )
+
+        if reply == QMessageBox.Yes:
+            ok, err_msg = delete_model(model_id)
+            self._update_local_model_status()
+            if ok:
+                QMessageBox.information(self, "Deleted", f"Local model [{model_id}] has been deleted.")
+            else:
+                QMessageBox.warning(self, "Delete Failed", err_msg)
 
     def load_config(self) -> None:
         self._updating_ui = True
 
-        # Refresh static i18n labels
         self.enable_llm_cb.setText(i18n.t("llm_enable"))
         self.lbl_provider.setText(i18n.t("llm_provider"))
         self.lbl_api_key.setText(i18n.t("lbl_api_key"))
         self.lbl_base_url.setText(i18n.t("lbl_base_url"))
         self.lbl_model_name.setText(i18n.t("lbl_model_name"))
         self.fetch_llm_btn.setText(i18n.t("btn_fetch_models"))
+        self.lbl_local_status_title.setText(i18n.t("lbl_local_model_status"))
+        self.download_model_btn.setText(i18n.t("btn_download_local_model"))
+        self.delete_model_btn.setText(i18n.t("btn_delete_local_model"))
         self.prompt_label.setText(i18n.t("llm_system_prompt"))
         self.reset_prompt_btn.setText(i18n.t("btn_reset_prompt"))
         self.test_llm_btn.setText(i18n.t("btn_test_llm"))
@@ -207,7 +377,11 @@ class LLMSettingsTab(QWidget):
         prompt = self.prompt_edit.toPlainText().strip()
         provider = self.llm_provider_combo.currentText()
 
-        if not key and "localhost" not in url and "127.0.0.1" not in url:
+        if provider == "local":
+            if not is_model_downloaded(model):
+                QMessageBox.warning(self, "Local Model Missing", f"Local model '{model}' is not downloaded yet. Please download it first.")
+                return
+        elif not key and "localhost" not in url and "127.0.0.1" not in url:
             QMessageBox.warning(self, "Test Failed", f"Please enter the LLM API Key.")
             return
 
@@ -230,3 +404,4 @@ class LLMSettingsTab(QWidget):
             "Test Success",
             f"LLM Connection & Refinement Succeeded!\nProvider: {provider}\nModel: {model}\n\nInput: '{test_text}'\nRefined Output: '{res}'"
         )
+

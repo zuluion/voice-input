@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2026.07.30.012] - 2026-07-30
+
+### 🤖 Local LLM Provider, WebDAV Path Precision, Logo & Dynamic Versioning
+- **Local GGUF LLM Provider**: Added `local` LLM provider support in `src/refine/llm.py` and `src/ui/settings/llm_tab.py`. Supports running GGUF models locally with automatic fallback.
+- **Model Downloader & Manager**: Implemented `src/utils/model_downloader.py` storing models in `~/.voiceinput/models/`. Features model selection (Qwen2.5-0.5B/1.5B), confirmation popups with model ID and file size, progress dialog, proxy support via `src/utils/proxy.py`, and a "Delete Local Model" button with confirmation.
+- **WebDAV Path Resolution Fix**: Refactored `WebDAVSync._get_url_for_path()` in `src/utils/webdav.py` with standard `urllib.parse` path splitting and subpath deduplication. Ensures subpaths (e.g. `/dav/`, `/remote.php/webdav/`) are correctly preserved and automatically creates local destination directories.
+- **Single-Source Versioning**: Created `src/utils/version.py` (`get_app_version()`, `get_logo_path()`) to dynamically read the single-source `VERSION` file in both development and PyInstaller frozen environments.
+- **Transparent Vector Logo**: Created and integrated a clean transparent background PNG logo (`assets/logo.png`) displayed in the About tab and header.
+
 ## [2026.07.30.011] - 2026-07-30
 
 ### 🚀 CI/CD Cumulative Release Changelog Extraction
