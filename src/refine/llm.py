@@ -21,10 +21,15 @@ class LLMRefiner:
     def __init__(self, config: dict = None) -> None:
         self.config = config or {}
         self.enabled = self.config.get("enabled", True)
-        self.api_key = self.config.get("api_key", "")
-        self.base_url = self.config.get("base_url", "https://api.openai.com/v1").rstrip("/")
-        self.model = self.config.get("model", "gpt-4o-mini")
         self.system_prompt = self.config.get("system_prompt", "").strip() or DEFAULT_SYSTEM_PROMPT
+
+        # Support provider mode
+        provider = self.config.get("provider", "openai")
+        provider_cfg = self.config.get(provider, {})
+
+        self.api_key = provider_cfg.get("api_key") or self.config.get("api_key", "")
+        self.base_url = (provider_cfg.get("base_url") or self.config.get("base_url", "https://api.openai.com/v1")).rstrip("/")
+        self.model = provider_cfg.get("model") or self.config.get("model", "gpt-4o-mini")
 
     def refine(self, transcript: str) -> str:
         if not transcript.strip():
@@ -35,7 +40,7 @@ class LLMRefiner:
             print("[LLM Refine] LLM refinement is disabled in settings. Skipping LLM.")
             return transcript
 
-        if not self.api_key:
+        if not self.api_key and "localhost" not in self.base_url and "127.0.0.1" not in self.base_url:
             print("[LLM Refine] LLM API Key is empty. Skipping LLM refinement.")
             return transcript
 
@@ -43,9 +48,11 @@ class LLMRefiner:
         print(f"[LLM Refine] Raw ASR Input: '{transcript}'")
 
         headers = {
-            "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json"
         }
+        if self.api_key:
+            headers["Authorization"] = f"Bearer {self.api_key}"
+
         payload = {
             "model": self.model,
             "messages": [

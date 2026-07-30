@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2026.07.30.002] - 2026-07-30
+
+### 🚀 Features & Architecture Refactoring
+- **6-Provider LLM Refinement**: Refactored LLM Settings to provider mode supporting OpenAI, DeepSeek, Xiaomi, Qwen, Ollama, and Custom providers.
+- **WebDAV Configuration Sync**: Added WebDAV sync tab (`src/ui/settings/webdav_tab.py`) supporting upload, download, remote backup history browser dialog (`WebDAVHistoryDialog`), and startup auto-sync.
+- **Global Network Proxy Support**: Added proxy settings tab (`src/ui/settings/proxy_tab.py`) supporting HTTP/SOCKS4/SOCKS5, default placeholders (`127.0.0.1:7890`), and connection testing.
+- **Software Info & About Tab**: Added About tab (`src/ui/settings/about_tab.py`) showcasing app title, author (`Zuluion`), current version (`VERSION`), repo link, and update checker.
+- **Floating Capsule 30 FPS Animation**: Enhanced floating capsule UI (`src/ui/capsule.py`) with 30 FPS timer, breathing REC dot glow, and dynamic wave animation.
+- **Settings Architecture Modularization**: Refactored `src/ui/settings.py` into a modular package `src/ui/settings/` (`asr_tab`, `llm_tab`, `webdav_tab`, `proxy_tab`, `hotkey_tab`, `about_tab`, `window.py`).
+
 ## [2026.07.30.001] - 2026-07-30
 
 ### 🚀 LLM Refinement Prompt Enhancement

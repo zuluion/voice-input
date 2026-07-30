@@ -20,6 +20,8 @@ from src.audio.recorder import AudioRecorder
 from src.asr import create_asr_provider
 from src.refine.llm import LLMRefiner
 from src.utils.injector import TextInjector
+from src.utils.proxy import apply_proxy_config
+from src.utils.webdav import WebDAVSync
 from src.ui.capsule import FloatingCapsule
 from src.ui.tray import SystemTrayApp
 from src.ui.settings import SettingsWindow
@@ -50,12 +52,19 @@ class VoiceInputController(QObject):
     def __init__(self) -> None:
         super().__init__()
         self.config_manager = ConfigManager()
+
+        # Apply Proxy Config
+        apply_proxy_config(self.config_manager.get("proxy", default={}))
+
+        # Auto-sync WebDAV if enabled
+        self._check_webdav_auto_sync()
+
         self.capsule = FloatingCapsule()
         self.tray_app = SystemTrayApp()
         self.injector = TextInjector()
         self.settings_window = None
 
-        hotkey_str = self.config_manager.get("hotkey", default="Key.alt_r")
+        hotkey_str = self.config_manager.get("hotkey", default="Key.ctrl_r")
         self.hotkey_listener = HotkeyListener(target_key_str=hotkey_str)
         self.audio_recorder = AudioRecorder()
 
@@ -75,6 +84,22 @@ class VoiceInputController(QObject):
         self.tray_app.open_settings_requested.connect(self._open_settings)
         self.tray_app.quit_requested.connect(self._quit_app)
 
+    def _check_webdav_auto_sync(self) -> None:
+        webdav_cfg = self.config_manager.get("webdav", default={})
+        if webdav_cfg.get("enabled") and webdav_cfg.get("auto_sync_on_startup"):
+            print("[Main] WebDAV Auto-sync on startup is enabled. Downloading latest config...")
+            sync = WebDAVSync(webdav_cfg)
+            threading.Thread(target=self._run_webdav_sync, args=(sync,), daemon=True).start()
+
+    def _run_webdav_sync(self, sync: WebDAVSync) -> None:
+        ok, msg = sync.download_config(self.config_manager.config_path)
+        if ok:
+            print("[Main] WebDAV Auto-sync succeeded! Reloading config...")
+            self.config_manager.config = self.config_manager.load_config()
+            apply_proxy_config(self.config_manager.get("proxy", default={}))
+        else:
+            print(f"[Main] WebDAV Auto-sync failed: {msg}")
+
     def start(self) -> None:
         self.tray_app.show()
         self.hotkey_listener.start()
@@ -84,7 +109,7 @@ class VoiceInputController(QObject):
         if not self.tray_app.is_enabled():
             print("[Main] Tray app is disabled, ignoring hotkey")
             return
-        
+
         self.capsule.set_state(FloatingCapsule.STATE_PREPARING)
         self.capsule.show_capsule()
 
@@ -108,14 +133,12 @@ class VoiceInputController(QObject):
     def _on_audio_error(self, err_msg: str) -> None:
         print(f"[Main Audio Error] {err_msg}")
         self.capsule.hide_capsule()
-        # Show Tray Notification
         self.tray_app.tray_icon.showMessage(
             "语音输入设备错误",
             err_msg,
             QSystemTrayIcon.Warning,
             4000
         )
-        # Show Modal Warning Popup
         QMessageBox.warning(None, "语音输入设备错误", err_msg)
 
     def _on_asr_text_updated(self, text: str, is_final: bool) -> None:
@@ -152,9 +175,10 @@ class VoiceInputController(QObject):
         self.settings_window.raise_()
 
     def _on_config_saved(self) -> None:
-        new_hotkey = self.config_manager.get("hotkey", default="Key.alt_r")
+        new_hotkey = self.config_manager.get("hotkey", default="Key.ctrl_r")
         self.hotkey_listener.set_target_key(new_hotkey)
         self.llm_refiner = LLMRefiner(self.config_manager.get("llm", default={}))
+        apply_proxy_config(self.config_manager.get("proxy", default={}))
 
     def _quit_app(self) -> None:
         self.hotkey_listener.stop()

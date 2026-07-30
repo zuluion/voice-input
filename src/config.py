@@ -45,10 +45,52 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     },
     "llm": {
         "enabled": True,
-        "api_key": "",
-        "base_url": "https://api.openai.com/v1",
-        "model": "gpt-4o-mini",
-        "system_prompt": DEFAULT_SYSTEM_PROMPT
+        "provider": "openai",
+        "system_prompt": DEFAULT_SYSTEM_PROMPT,
+        "openai": {
+            "api_key": "",
+            "base_url": "https://api.openai.com/v1",
+            "model": "gpt-4o-mini"
+        },
+        "deepseek": {
+            "api_key": "",
+            "base_url": "https://api.deepseek.com/v1",
+            "model": "deepseek-chat"
+        },
+        "xiaomi": {
+            "api_key": "",
+            "base_url": "https://api.xiaomimimo.com/v1",
+            "model": "mimo-v2.5-asr"
+        },
+        "qwen": {
+            "api_key": "",
+            "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+            "model": "qwen-plus"
+        },
+        "ollama": {
+            "api_key": "",
+            "base_url": "http://localhost:11434/v1",
+            "model": "qwen2.5:7b"
+        },
+        "custom": {
+            "api_key": "",
+            "base_url": "https://api.openai.com/v1",
+            "model": "gpt-4o-mini"
+        }
+    },
+    "proxy": {
+        "enabled": False,
+        "protocol": "http",
+        "host": "127.0.0.1",
+        "port": 7890
+    },
+    "webdav": {
+        "enabled": False,
+        "server_url": "https://dav.jianguoyun.com/dav/",
+        "username": "",
+        "password": "",
+        "remote_path": "/VoiceInput/config.json",
+        "auto_sync_on_startup": False
     },
     "ui": {
         "position": "bottom_center",

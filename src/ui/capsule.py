@@ -18,6 +18,7 @@ class FloatingCapsule(QWidget):
         self.setAttribute(Qt.WA_TranslucentBackground)
 
         self.current_state = self.STATE_PREPARING
+        self.raw_bar_levels = [0.1, 0.1, 0.1, 0.1, 0.1]
         self.bar_heights = [0.1, 0.1, 0.1, 0.1, 0.1]
         self.status_text = "Preparing..."
         self.capsule_width = 190
@@ -25,7 +26,7 @@ class FloatingCapsule(QWidget):
 
         self.pulse_phase = 0.0
         self.pulse_timer = QTimer(self)
-        self.pulse_timer.setInterval(40)  # 25 FPS for pulse animation
+        self.pulse_timer.setInterval(33)  # 30 FPS for smooth pulsing & breathing
         self.pulse_timer.timeout.connect(self._on_pulse_tick)
 
         self.resize(self.capsule_width, self.capsule_height)
@@ -48,16 +49,16 @@ class FloatingCapsule(QWidget):
             self.pulse_timer.start()
         elif state == self.STATE_LISTENING:
             self.status_text = "Listening..."
-            self.pulse_timer.stop()
+            self.pulse_timer.start()
         elif state == self.STATE_REFINING:
             self.status_text = "Refining..."
-            self.pulse_timer.stop()
+            self.pulse_timer.start()
         self.update_width()
         self.update()
 
     def set_volume_levels(self, levels: list) -> None:
         if self.current_state == self.STATE_LISTENING and len(levels) == 5:
-            self.bar_heights = levels
+            self.raw_bar_levels = levels
             self.update()
 
     def set_status_text(self, text: str) -> None:
@@ -75,12 +76,22 @@ class FloatingCapsule(QWidget):
             self._position_bottom_center()
 
     def _on_pulse_tick(self) -> None:
+        self.pulse_phase += 0.15
         if self.current_state == self.STATE_PREPARING:
-            self.pulse_phase += 0.2
             for i in range(5):
                 val = 0.2 + 0.6 * (0.5 + 0.5 * math.sin(self.pulse_phase - i * 0.6))
                 self.bar_heights[i] = val
-            self.update()
+        elif self.current_state == self.STATE_LISTENING:
+            for i in range(5):
+                raw = self.raw_bar_levels[i]
+                # Combine real volume with subtle breathing wave during silence
+                idle_wave = 0.15 + 0.1 * math.sin(self.pulse_phase - i * 0.5)
+                self.bar_heights[i] = max(idle_wave, raw)
+        elif self.current_state == self.STATE_REFINING:
+            for i in range(5):
+                val = 0.25 + 0.35 * (0.5 + 0.5 * math.sin(self.pulse_phase * 0.8 - i * 0.4))
+                self.bar_heights[i] = val
+        self.update()
 
     def show_capsule(self) -> None:
         print(f"[Capsule UI] Showing floating capsule (State: {self.current_state})")
@@ -124,24 +135,30 @@ class FloatingCapsule(QWidget):
         painter.setPen(QPen(border_color, 1.5))
         painter.drawRoundedRect(bg_rect, 26, 26)
 
-        # 2. Left Status Element (Red REC Dot when LISTENING, Amber Dot when PREPARING)
+        # 2. Left Status Element (Red REC Dot with Breathing Glow when LISTENING)
         dot_x = 22.0
         dot_y = self.capsule_height / 2.0
         dot_radius = 4.5
 
         if self.current_state == self.STATE_PREPARING:
-            # Amber/Yellow preparing dot
             painter.setPen(Qt.NoPen)
             painter.setBrush(QBrush(QColor(245, 158, 11)))
             painter.drawEllipse(QPointF(dot_x, dot_y), dot_radius, dot_radius)
         elif self.current_state == self.STATE_LISTENING:
-            # Glowing Red REC Dot 🔴
-            glow_color = QColor(239, 68, 68, 80)
+            # Pulsing/Breathing Red REC Dot 🔴
+            glow_expand = 2.0 + 2.0 * (0.5 + 0.5 * math.sin(self.pulse_phase * 1.5))
+            glow_alpha = int(70 + 50 * (0.5 + 0.5 * math.sin(self.pulse_phase * 1.5)))
+            glow_color = QColor(239, 68, 68, glow_alpha)
+
             painter.setPen(Qt.NoPen)
             painter.setBrush(QBrush(glow_color))
-            painter.drawEllipse(QPointF(dot_x, dot_y), dot_radius + 3.0, dot_radius + 3.0)
+            painter.drawEllipse(QPointF(dot_x, dot_y), dot_radius + glow_expand, dot_radius + glow_expand)
 
             painter.setBrush(QBrush(QColor(239, 68, 68)))
+            painter.drawEllipse(QPointF(dot_x, dot_y), dot_radius, dot_radius)
+        elif self.current_state == self.STATE_REFINING:
+            painter.setPen(Qt.NoPen)
+            painter.setBrush(QBrush(QColor(168, 85, 247)))
             painter.drawEllipse(QPointF(dot_x, dot_y), dot_radius, dot_radius)
 
         # 3. Draw 5 Waveform Bars
