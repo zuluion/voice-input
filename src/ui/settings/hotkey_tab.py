@@ -65,6 +65,11 @@ class HotkeyRecorderWidget(QWidget):
 
         self.update_display(self.current_key)
 
+    def retranslate_ui(self) -> None:
+        if not self.is_recording:
+            self.record_btn.setText(i18n.t("btn_record_hotkey"))
+        self.reset_btn.setText(i18n.t("btn_reset_hotkey"))
+
     def update_display(self, key_str: str) -> None:
         self.current_key = key_str
         display_name = format_key_display(key_str)
@@ -78,8 +83,8 @@ class HotkeyRecorderWidget(QWidget):
 
     def _start_recording(self) -> None:
         self.is_recording = True
-        self.record_btn.setText("🔴 Press any key...")
-        self.keycap_label.setText("[ Waiting key... ]")
+        self.record_btn.setText(i18n.t("hotkey_recording"))
+        self.keycap_label.setText(i18n.t("hotkey_waiting"))
 
         self.kb_listener = keyboard.Listener(on_press=self._on_key_press)
         self.kb_listener.start()
@@ -113,28 +118,69 @@ class HotkeySettingsTab(QWidget):
         layout = QFormLayout(self)
 
         # Language QComboBox
+        self.lbl_language = QLabel(i18n.t("lbl_language"))
         self.lang_combo = QComboBox()
+        self._populate_languages()
+        layout.addRow(self.lbl_language, self.lang_combo)
+
+        self.lbl_hotkey = QLabel(i18n.t("lbl_hotkey"))
+        self.hotkey_recorder = HotkeyRecorderWidget()
+        self.hotkey_recorder.key_recorded.connect(self._on_key_recorded)
+        layout.addRow(self.lbl_hotkey, self.hotkey_recorder)
+
+        self.lbl_position = QLabel(i18n.t("lbl_position"))
+        self.pos_combo = QComboBox()
+        self._populate_positions()
+        layout.addRow(self.lbl_position, self.pos_combo)
+
+        self.open_config_btn = QPushButton(i18n.t("btn_open_config_dir"))
+        self.open_config_btn.clicked.connect(self._open_config_dir)
+        layout.addRow("", self.open_config_btn)
+
+    def _populate_languages(self) -> None:
+        curr_data = self.lang_combo.currentData() if self.lang_combo.count() > 0 else None
+        self.lang_combo.clear()
         self.lang_combo.addItem(i18n.t("lbl_lang_auto"), "auto")
         self.lang_combo.addItem(i18n.t("lbl_lang_zh"), "zh_CN")
         self.lang_combo.addItem(i18n.t("lbl_lang_en"), "en_US")
-        layout.addRow(i18n.t("lbl_language"), self.lang_combo)
+        if curr_data:
+            idx = self.lang_combo.findData(curr_data)
+            if idx >= 0:
+                self.lang_combo.setCurrentIndex(idx)
 
-        self.hotkey_recorder = HotkeyRecorderWidget()
-        self.hotkey_recorder.key_recorded.connect(self._on_key_recorded)
-        layout.addRow(i18n.t("lbl_hotkey"), self.hotkey_recorder)
-
-        self.pos_combo = QComboBox()
-        self.pos_combo.addItems(["bottom_center", "top_center", "center"])
-        layout.addRow(i18n.t("lbl_position"), self.pos_combo)
-
-        open_config_btn = QPushButton(i18n.t("btn_open_config_dir"))
-        open_config_btn.clicked.connect(self._open_config_dir)
-        layout.addRow("", open_config_btn)
+    def _populate_positions(self) -> None:
+        curr_data = self.pos_combo.currentData() if self.pos_combo.count() > 0 else None
+        self.pos_combo.clear()
+        self.pos_combo.addItem(i18n.t("pos_bottom_center"), "bottom_center")
+        self.pos_combo.addItem(i18n.t("pos_top_center"), "top_center")
+        self.pos_combo.addItem(i18n.t("pos_center"), "center")
+        if curr_data:
+            idx = self.pos_combo.findData(curr_data)
+            if idx >= 0:
+                self.pos_combo.setCurrentIndex(idx)
 
     def _on_key_recorded(self, key_str: str) -> None:
         self.recorded_key_str = key_str
 
     def load_config(self) -> None:
+        # Retranslate labels
+        self.lbl_language.setText(i18n.t("lbl_language"))
+        self.lbl_hotkey.setText(i18n.t("lbl_hotkey"))
+        self.lbl_position.setText(i18n.t("lbl_position"))
+        self.open_config_btn.setText(i18n.t("btn_open_config_dir"))
+        self.hotkey_recorder.retranslate_ui()
+        self._populate_languages()
+
+        pos = self.config_manager.get("ui", "position", default="bottom_center")
+        pos_idx = self.pos_combo.findData(pos)
+        if pos_idx >= 0:
+            self.pos_combo.setCurrentIndex(pos_idx)
+        else:
+            self._populate_positions()
+            idx = self.pos_combo.findData(pos)
+            if idx >= 0:
+                self.pos_combo.setCurrentIndex(idx)
+
         lang = self.config_manager.get("language", default="auto")
         idx = self.lang_combo.findData(lang)
         if idx >= 0:
@@ -144,17 +190,12 @@ class HotkeySettingsTab(QWidget):
         self.recorded_key_str = hotkey
         self.hotkey_recorder.update_display(hotkey)
 
-        pos = self.config_manager.get("ui", "position", default="bottom_center")
-        pos_idx = self.pos_combo.findText(pos)
-        if pos_idx >= 0:
-            self.pos_combo.setCurrentIndex(pos_idx)
-
     def save_config(self, cfg: dict) -> None:
         cfg["language"] = self.lang_combo.currentData()
         cfg["hotkey"] = self.recorded_key_str
         if "ui" not in cfg:
             cfg["ui"] = {}
-        cfg["ui"]["position"] = self.pos_combo.currentText()
+        cfg["ui"]["position"] = self.pos_combo.currentData() or "bottom_center"
 
         # Apply i18n immediately
         i18n.set_language(cfg["language"])

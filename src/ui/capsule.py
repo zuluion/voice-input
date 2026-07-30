@@ -23,6 +23,7 @@ class FloatingCapsule(QWidget):
         self.status_text = "Preparing..."
         self.capsule_width = 190
         self.capsule_height = 56
+        self.position = "bottom_center"
 
         self.pulse_phase = 0.0
         self.pulse_timer = QTimer(self)
@@ -37,6 +38,28 @@ class FloatingCapsule(QWidget):
         self._fade_anim = QPropertyAnimation(self.opacity_effect, b"opacity")
         self._fade_anim.setDuration(220)
         self._fade_anim.finished.connect(self._on_fade_finished)
+
+    def set_position(self, position_str: str) -> None:
+        self.position = position_str or "bottom_center"
+        self.reposition()
+
+    def reposition(self) -> None:
+        screen = QApplication.primaryScreen()
+        if not screen:
+            return
+        geom = screen.availableGeometry()
+
+        if self.position == "top_center":
+            x = geom.x() + (geom.width() - self.capsule_width) // 2
+            y = geom.y() + 60
+        elif self.position == "center":
+            x = geom.x() + (geom.width() - self.capsule_width) // 2
+            y = geom.y() + (geom.height() - self.capsule_height) // 2
+        else:  # bottom_center
+            x = geom.x() + (geom.width() - self.capsule_width) // 2
+            y = geom.y() + geom.height() - self.capsule_height - 60
+
+        self.move(x, y)
 
     def _on_fade_finished(self) -> None:
         if self.opacity_effect.opacity() == 0.0:
@@ -73,7 +96,7 @@ class FloatingCapsule(QWidget):
         if target_w != self.capsule_width:
             self.capsule_width = target_w
             self.resize(self.capsule_width, self.capsule_height)
-            self._position_bottom_center()
+            self.reposition()
 
     def _on_pulse_tick(self) -> None:
         self.pulse_phase += 0.15
@@ -84,7 +107,6 @@ class FloatingCapsule(QWidget):
         elif self.current_state == self.STATE_LISTENING:
             for i in range(5):
                 raw = self.raw_bar_levels[i]
-                # Combine real volume with subtle breathing wave during silence
                 idle_wave = 0.15 + 0.1 * math.sin(self.pulse_phase - i * 0.5)
                 self.bar_heights[i] = max(idle_wave, raw)
         elif self.current_state == self.STATE_REFINING:
@@ -94,8 +116,8 @@ class FloatingCapsule(QWidget):
         self.update()
 
     def show_capsule(self) -> None:
-        print(f"[Capsule UI] Showing floating capsule (State: {self.current_state})")
-        self._position_bottom_center()
+        print(f"[Capsule UI] Showing floating capsule at '{self.position}' (State: {self.current_state})")
+        self.reposition()
         self.show()
         self.raise_()
 
@@ -113,14 +135,6 @@ class FloatingCapsule(QWidget):
         self._fade_anim.setEndValue(0.0)
         self._fade_anim.setEasingCurve(QEasingCurve.InCubic)
         self._fade_anim.start()
-
-    def _position_bottom_center(self) -> None:
-        screen = QApplication.primaryScreen()
-        if screen:
-            geom = screen.availableGeometry()
-            x = (geom.width() - self.capsule_width) // 2
-            y = geom.height() - self.capsule_height - 60
-            self.move(x, y)
 
     def paintEvent(self, event) -> None:
         painter = QPainter(self)
@@ -145,7 +159,6 @@ class FloatingCapsule(QWidget):
             painter.setBrush(QBrush(QColor(245, 158, 11)))
             painter.drawEllipse(QPointF(dot_x, dot_y), dot_radius, dot_radius)
         elif self.current_state == self.STATE_LISTENING:
-            # Pulsing/Breathing Red REC Dot 🔴
             glow_expand = 2.0 + 2.0 * (0.5 + 0.5 * math.sin(self.pulse_phase * 1.5))
             glow_alpha = int(70 + 50 * (0.5 + 0.5 * math.sin(self.pulse_phase * 1.5)))
             glow_color = QColor(239, 68, 68, glow_alpha)

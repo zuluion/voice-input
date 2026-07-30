@@ -6,14 +6,19 @@
 - **全局长按热键触发与交互录制**：按住热键开始录音，松开自动转录精修并注入文本。设置界面提供图形化交互式热键录制（推荐 `[ Right Control ]` / `[ Space ]` 键帽显示）。
 - **多 Provider ASR 深度接入**：灵活接入小米 MiMo (`mimo-v2.5-asr`)、豆包 (Volcengine)、通义千问 (DashScope) 及 OpenAI 兼容语音识别 API。
 - **6 大 LLM 供应商模式与口误中途改口处理**：支持 OpenAI, DeepSeek, Xiaomi, 阿里云通义千问, 本地 Ollama, Custom 自定义 6 大供应商。不仅自动擦除语气冗余与谐音错字，更可识别“不对”、“算了”、“改成”等改口信号，自动覆盖旧表述并完美保留句式主干。
-- **30 FPS 动态视觉交互悬浮窗**：无边框半透明置顶 UI，具备 30 FPS 呼吸脉冲与动态波形演进：
+- **30 FPS 动态视觉交互与多位置悬浮窗**：无边框半透明置顶 UI，具备 30 FPS 呼吸脉冲与动态波形演进，支持 **`底部居中 (bottom_center)`**、**`顶部居中 (top_center)`**、**`屏幕中央 (center)`** 灵活摆放：
   - **`Preparing...`** (缓冲扫频动画)
   - **`Listening...`** (亮白文字 + 🔴 高亮发光呼吸 REC 红灯 + 5-Bar 音量扫频混合波形)
   - **`Refining...`** (柔和紫光)
-- **WebDAV 全量配置同步与历史备份恢复**：支持坚果云与自定义 WebDAV 服务器（URL、账号、应用密码），提供手动上传/下载、**远端历史备份浏览与选择恢复**，以及应用启动时自动下载同步。
-- **全局网络代理支持 (HTTP / SOCKS4 / SOCKS5)**：支持一键开关网络代理，配置 `127.0.0.1:7890` 提示主机与端口，全量注入环境变量驱动所有网络请求走代理。
+- **WebDAV 供应商模式、远端目录简化与最多 5 个备份自动循环清理**：
+  - 支持坚果云与自定义 WebDAV 供应商，远端配置简化为远端保存目录（如 `/VoiceInput`），主配置文件固定同步为 `config.json`；
+  - 自动为上传历史生成年月日精准时间戳后缀（如 `config_20260730_101629.json`）；
+  - 内置自动循环清理机制（默认最大保留 5 个备份），超过数量时自动物理删除最旧的历史文件。
+- **全局网络代理与显式代理路由日志 (HTTP / SOCKS4 / SOCKS5)**：支持一键开关网络代理，配置 `127.0.0.1:7890` 提示主机与端口。开启调试模式时，全量显式输出 `[VIA PROXY: ...]` 代理路由日志。
+- **调试模式与带时间戳日志写盘**：提供 `🐞 Debug` 调试设置页，开启时在本地 `logs/voice_input_YYYYMMDD.log` 生成带有毫秒级时间戳的 ASR 识别原始文本与 LLM 润色输出明文日志，关闭时全流程零日志保护隐私。
+- **i18n 多语言引擎与 Windows 系统语言自动识别**：内置 **简体中文 (`zh_CN`)** 与 **English (`en_US`)** 完整国际化支持，启动时调用 `QLocale` 自动识别操作系统语言，支持在设置界面一键切换并即时动态刷新所有 Tab 标题与表单 Label。
 - **模块化暗黑 Settings GUI & 软件信息页**：
-  - 代码解耦重构拆分为 `src/ui/settings/` 模块包 (`asr_tab`, `llm_tab`, `webdav_tab`, `proxy_tab`, `hotkey_tab`, `about_tab`)。
+  - 代码解耦重构拆分为 `src/ui/settings/` 模块包 (`asr_tab`, `llm_tab`, `webdav_tab`, `proxy_tab`, `hotkey_tab`, `debug_tab`, `about_tab`)。
   - 高质感 `#12151e` 暗黑护眼 UI 主题。
   - **`🔄 Fetch Models`** 按钮：动态拉取服务商可用模型列表 (`/models` API)。
   - **一键连通性测试**：支持 ASR、LLM、WebDAV、代理连通性测试。
@@ -57,20 +62,25 @@ python src/main.py
    - 可在 **System Prompt** 框中自定义整理规则，或点击 **`↺ Reset Prompt`** 恢复内置推荐规则。
    - 点击 **`Test LLM Connection`** 即可测试口语整理与改口覆盖效果。
 4. **设置 WebDAV 同步 (WebDAV Sync)**：
-   - 在 **WebDAV Sync** 页中，填入服务器 URL（如坚果云 `https://dav.jianguoyun.com/dav/`）、账号与 App 密码。
-   - 可点击 **`📤 Upload Current Config`** 或 **`📋 View Remote Backups & Restore`** 查看历史备份恢复。
+   - 在 **WebDAV Sync** 页中，选择 **`jianguoyun` (坚果云)** 或 **`custom` (自定义)** 供应商。
+   - 填入服务器 URL（如坚果云 `https://dav.jianguoyun.com/dav/`）、账号、App 密码与远端目录（如 `/VoiceInput`）。
+   - 可点击 **`📤 Upload Current Config`** 或 **`📋 View Remote Backups & Restore`** 查看历史备份恢复。系统将自动删除超过 5 个的最旧备份。
 5. **设置代理 (Proxy)**：
    - 在 **Proxy** 页中，勾选 **Enable Global Network Proxy**，选择 `http`/`socks4`/`socks5` 协议并填入主机名（`127.0.0.1`）与端口（`7890`）。
-6. **设置触发热键 (Hotkey & General)**：
+6. **设置触发热键与显示语言 (Hotkey & General)**：
+   - 在 **Language** 下拉框中选择 `Auto (跟随系统)`、`简体中文` 或 `English`。
+   - 在 **Capsule Position** 下拉框中选择悬浮窗位置（`底部居中` / `顶部居中` / `屏幕中央`）。
    - 点击 **`🎙️ Click to Record`** 按钮，按键盘任意键（推荐右侧 **`Right Control`**）即可完成交互录制。
    - 点击 **`Save Config`** 保存设置。
+7. **调试模式 (Debug)**：
+   - 在 **Debug** 页勾选开启调试模式，即可在本地 `logs/` 查看带毫秒时间戳与代理路由标签的明文日志。
 
 ---
 
 ### 4. 快捷语音输入交互
 1. 打开并聚焦到任意文本输入框（如 **VS Code**、**记事本**、**微信**、**浏览器** 等）。
 2. **长按 `Right Control` 键**：
-   - 屏幕底部中央立即弹起胶囊浮窗，显示琥珀黄 **`Preparing...`** 缓冲动画。
+   - 屏幕上显示琥珀黄 **`Preparing...`** 缓冲动画。
    - 麦克风成功捕获第一帧声音时，瞬间切换为 **亮白 `Listening...`** 并点亮 **高亮发光呼吸 REC 红灯 🔴**。
    - 说话时，5 根波形条随实际音量与扫频跳动。
 3. **松开 `Right Control` 键**：

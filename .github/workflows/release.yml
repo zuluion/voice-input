@@ -24,7 +24,7 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Read Version & Extract Changelog
+      - name: Read Version & Extract Cumulative Changelog
         id: get_version
         shell: pwsh
         run: |
@@ -32,13 +32,33 @@ jobs:
           "VERSION=$ver" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           Write-Host "Building version: $ver"
 
+          # 1. Retrieve the most recent GitHub release tag
+          $lastTag = ""
+          try {
+              $tags = (git tag -l "v*" --sort=-v:refname)
+              if ($tags) {
+                  $prevTags = $tags | Where-Object { $_ -ne "v$ver" }
+                  if ($prevTags) {
+                      $lastTag = $prevTags[0].TrimStart('v')
+                  }
+              }
+          } catch {
+              Write-Host "No previous tag found: $_"
+          }
+
+          Write-Host "Last GitHub Release tag found: '$lastTag'"
+
+          # 2. Extract cumulative changelog entries spanning from $lastTag to $ver
           if (Test-Path CHANGELOG.md) {
               $content = Get-Content CHANGELOG.md -Encoding utf8 -Raw
-              $pattern = "(?ms)^##\s*\[$ver\].*?(?=^##\s*\[|\Z)"
-              if ($content -match $pattern) {
+              if ($lastTag -and $content -match "(?ms)^##\s*\[$ver\].*?(?=^##\s*\[$([regex]::Escape($lastTag))\]|\Z)") {
                   $changelog = $Matches[0].Trim()
                   $changelog | Out-File -FilePath RELEASE_CHANGELOG.md -Encoding utf8
-                  Write-Host "Found changelog entry for version $ver"
+                  Write-Host "Successfully extracted cumulative changelog spanning from v$lastTag to v$ver"
+              } elseif ($content -match "(?ms)^##\s*\[$ver\].*?(?=^##\s*\[|\Z)") {
+                  $changelog = $Matches[0].Trim()
+                  $changelog | Out-File -FilePath RELEASE_CHANGELOG.md -Encoding utf8
+                  Write-Host "Extracted single version changelog for v$ver"
               } else {
                   "## Release v$ver`n`nAutomated release build for version $ver." | Out-File -FilePath RELEASE_CHANGELOG.md -Encoding utf8
               }
@@ -70,7 +90,7 @@ jobs:
           $json.architecture.'64bit'.hash = "$hash"
           $json | ConvertTo-Json -Depth 10 | Out-File -FilePath voice-input.json -Encoding utf8
 
-      - name: Create GitHub Release with Changelog
+      - name: Create GitHub Release with Cumulative Changelog
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ env.VERSION }}

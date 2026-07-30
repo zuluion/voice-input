@@ -72,6 +72,8 @@ class VoiceInputController(QObject):
         self._check_webdav_auto_sync()
 
         self.capsule = FloatingCapsule()
+        self.capsule.set_position(self.config_manager.get("ui", "position", default="bottom_center"))
+
         self.tray_app = SystemTrayApp()
         self.injector = TextInjector()
         self.settings_window = None
@@ -109,6 +111,7 @@ class VoiceInputController(QObject):
             logger.log("Main", "WebDAV Auto-sync succeeded! Reloading config...")
             self.config_manager.config = self.config_manager.load_config()
             i18n.set_language(self.config_manager.get("language", default="auto"))
+            self.capsule.set_position(self.config_manager.get("ui", "position", default="bottom_center"))
             apply_proxy_config(self.config_manager.get("proxy", default={}))
             logger.configure(self.config_manager.get("debug", default={}), self.config_manager.config_path)
         else:
@@ -191,6 +194,9 @@ class VoiceInputController(QObject):
     def _on_config_saved(self) -> None:
         new_lang = self.config_manager.get("language", default="auto")
         i18n.set_language(new_lang)
+
+        new_pos = self.config_manager.get("ui", "position", default="bottom_center")
+        self.capsule.set_position(new_pos)
 
         new_hotkey = self.config_manager.get("hotkey", default="Key.ctrl_r")
         self.hotkey_listener.set_target_key(new_hotkey)

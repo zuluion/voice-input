@@ -24,6 +24,18 @@ class TestEndToEndPipeline(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.test_dir, ignore_errors=True)
 
+    def test_capsule_positioning(self):
+        capsule = FloatingCapsule()
+
+        capsule.set_position("top_center")
+        self.assertEqual(capsule.position, "top_center")
+
+        capsule.set_position("center")
+        self.assertEqual(capsule.position, "center")
+
+        capsule.set_position("bottom_center")
+        self.assertEqual(capsule.position, "bottom_center")
+
     @patch("requests.post")
     @patch("win32clipboard.OpenClipboard")
     @patch("win32clipboard.CloseClipboard")
@@ -42,7 +54,6 @@ class TestEndToEndPipeline(unittest.TestCase):
             "choices": [{"message": {"content": "后天去北京出差"}}]
         }
 
-        # Differentiate ASR vs LLM post requests based on endpoint URL
         def side_effect(url, **kwargs):
             if "xiaomimimo" in url or "audio" in url:
                 return mock_asr_resp

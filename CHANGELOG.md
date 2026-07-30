@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2026.07.30.011] - 2026-07-30
+
+### 🚀 CI/CD Cumulative Release Changelog Extraction
+- **Cumulative GitHub Release Notes Algorithm**: Upgraded `.github/workflows/release.yml` to automatically parse and extract all cumulative changelog entries spanning between the previous GitHub Release tag and the current target version (`$lastTag` to `$ver`). Ensures that when multiple local releases are pushed together, the release notes on GitHub encompass all version changes since the last release.
+
+## [2026.07.30.010] - 2026-07-30
+
+### 🌐 Capsule Position Dropdown i18n Fix
+- **Capsule Position ComboBox i18n Localization**: Added i18n translations for Capsule Position options (`pos_bottom_center`, `pos_top_center`, `pos_center`), displaying `底部居中`, `顶部居中`, `屏幕中央` in Chinese and `Bottom Center`, `Top Center`, `Center` in English, while preserving exact configuration string compatibility (`bottom_center`, `top_center`, `center`).
+
+## [2026.07.30.009] - 2026-07-30
+
+### 🐛 Hotkey Tab i18n Refresh Fix
+- **Hotkey & General Tab i18n Retranslation Fix**: Fixed missing dynamic i18n label and button updates in `HotkeySettingsTab` (`src/ui/settings/hotkey_tab.py`). Added explicit label references (`lbl_language`, `lbl_hotkey`, `lbl_position`), dropdown item re-population (`_populate_languages`), and recorder widget retranslation (`HotkeyRecorderWidget.retranslate_ui`).
+
 ## [2026.07.30.008] - 2026-07-30
 
 ### 🌐 Comprehensive 100% i18n Sub-Page Coverage & Dynamic Retranslation

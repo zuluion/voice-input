@@ -17,17 +17,19 @@
 该应用具备以下核心特性：
 - **全局长按热键触发**：按住指定热键（推荐 `Right Control` 或 `Alt+Space`）即刻开始录音，松开按键自动精修并注入文本。支持交互式按键录制。
 - **多 Provider ASR 架构**：深度接入小米 MiMo (`mimo-v2.5-asr` Base64 Audio API)、豆包 (Volcengine)、通义千问 (DashScope) 以及 OpenAI 兼容的 `/v1/audio/transcriptions` 接口。
-- **三阶段视觉交互胶囊悬浮窗**：置顶无任务栏图标的胶囊浮窗，具备 30 FPS 动态呼吸与波形演进：
+- **三阶段视觉交互与多位置胶囊悬浮窗**：置顶无任务栏图标的胶囊浮窗，具备 30 FPS 动态呼吸与波形演进，支持底部居中、顶部居中与屏幕中央定位：
   - **`Preparing...`**：琥珀黄缓冲扫频脉冲。
   - **`Listening...`**：亮白文字 + 🔴 高亮发光呼吸 REC 红灯 + 5-Bar 动态音量波形（无声间隙保持微弱呼吸扫频）。
   - **`Refining...`**：紫色柔和退场。
 - **智能 LLM 文本精修、口误中途改口覆盖与口语清洗 (Refinement)**：支持 **6 大 LLM 供应商模式**（OpenAI, DeepSeek, Xiaomi, 阿里云通义千问, 本地 Ollama, Custom 自定义）。不仅修复谐音与术语，更可自动识别“不对”、“算了”、“改成”等改口信号并替换废弃表达。
-- **WebDAV 配置全量同步与远端历史备份恢复**：支持坚果云或自定义 WebDAV 服务器（URL、账号、应用密码），提供手动上传/下载、**远端历史备份列表选择与恢复**，以及启动时自动下载配置。
+- **WebDAV 供应商模式、全量配置同步与最多 5 个备份循环清理**：支持坚果云与自定义 WebDAV 供应商，远端目录简化为保存路径（如 `/VoiceInput`），自动为上传历史生成年月日时间戳后缀（如 `config_20260730_101629.json`），并在超过 5 个备份时自动物理删除最旧的历史文件。
 - **全局网络代理支持 (HTTP / SOCKS4 / SOCKS5)**：支持一键开关代理、配置主机名（默认提示 `127.0.0.1`）与端口号（默认提示 `7890`），全量注入环境变量驱动 API、WebSocket 与网络请求走代理。
+- **带时间戳调试日志模式 (Debug Logging Mode)**：提供独立 `🐞 Debug` 调试设置页，开启时在本地 `logs/voice_input_YYYYMMDD.log` 生成带有毫秒级时间戳及 `[VIA PROXY: ...]` 路由标签的 ASR/LLM 明文日志，关闭时全流程零磁盘日志以保护隐私。
+- **i18n 多语言引擎与 Windows 系统语言自动检测**：内置 **简体中文 (`zh_CN`)** 与 **English (`en_US`)** 完整国际化支持，自动识别操作系统语言，且支持在设置界面一键切换并即时动态重绘全软件所有 Tab 与 Label。
 - **软件信息与一键版本更新**：提供独立 About 页展示作者（`Zuluion`）、当前滚动版本号、GitHub 官方仓库链接及一键检查最新 Release 更新。
 - **无缝文本注入**：基于剪贴板备份与 Win32 `SendInput` 快捷键模拟，将最终文本安全注入到当前聚焦的任意输入框，并无感恢复原剪贴板内容。
 - **模块化设计的暗黑 Settings GUI 与硬件热插拔支持**：
-  - 重构拆分为 `src/ui/settings/` 模块包（`asr_tab`, `llm_tab`, `webdav_tab`, `proxy_tab`, `hotkey_tab`, `about_tab`）。
+  - 重构拆分为 `src/ui/settings/` 模块包（`asr_tab`, `llm_tab`, `webdav_tab`, `proxy_tab`, `hotkey_tab`, `debug_tab`, `about_tab`）。
   - 支持 `🔄 Fetch Models` 动态拉取服务商可用模型列表 (`/models` API)。
   - 支持一键连通性测试。
 
@@ -41,9 +43,10 @@
 4. As a user, I want a 3-stage floating capsule window (`Preparing...` -> `Listening...` with a breathing red 🔴 REC dot -> `Refining...`), so that I know precisely when the microphone is ready and capturing my voice.
 5. As a user, I want the capsule window's 5 waveform bars to dynamically respond to my actual speaking volume level in real-time while maintaining a subtle breathing motion during quiet pauses, so that the interface feels alive.
 6. As a user, I want LLM refinement to select from 6 major providers (OpenAI, DeepSeek, Xiaomi, Qwen, Ollama, Custom), automatically fix technical jargon, clean filler words, AND handle mid-sentence self-corrections ("A, wait, change to B" -> "B"), so that injected text is accurate and polished.
-7. As a user, I want to sync my `config.json` to my Jianguoyun/custom WebDAV server, view remote backup history, restore previous configs, or auto-sync on startup, so that my settings are never lost across devices.
-8. As a user behind a network proxy, I want to enable HTTP/SOCKS proxy (e.g. `127.0.0.1:7890`) in settings so that all network requests route through my local proxy seamlessly.
-9. As a user, I want an About tab displaying app info, author (`Zuluion`), current version, and an option to check for GitHub updates.
+7. As a user, I want to sync my `config.json` to my Jianguoyun/custom WebDAV server, auto-rotate up to 5 timestamped backups, view remote backup history, restore previous configs, or auto-sync on startup, so that my settings are never lost across devices.
+8. As a user behind a network proxy, I want to enable HTTP/SOCKS proxy (e.g. `127.0.0.1:7890`) in settings so that all network requests route through my local proxy seamlessly with explicit proxy tags in debug logs.
+9. As an international user, I want the app to automatically adapt to my system language (Simplified Chinese or English) and allow instant real-time switching without restarting.
+10. As a user, I want an About tab displaying app info, author (`Zuluion`), current version, and an option to check for GitHub updates.
 
 ---
 
@@ -74,14 +77,16 @@
         | - System Tray                 |
         | - Modular Settings (src/ui/   |
         |   settings/ subpackage)       |
+        | - i18n Internationalization   |
         +-------------------------------+
                         |
                         v
         +-------------------------------+
         | Utils Layer                   |
         | - Text Injector (SendInput)   |
-        | - WebDAV Sync Engine          |
+        | - WebDAV Sync (Max 5 Clean)   |
         | - Network Proxy Engine        |
+        | - AppLogger (Debug Mode)      |
         +-------------------------------+
 ```
 
@@ -98,7 +103,7 @@
 - 接入 Xiaomi MiMo (`mimo-v2.5-asr`), Doubao, Qwen, OpenAI-compatible HTTP.
 
 #### D. Floating Capsule Window (`ui/capsule.py`)
-- 30 FPS `QTimer` 动效驱动：
+- 30 FPS `QTimer` 动效驱动，支持 `bottom_center` / `top_center` / `center` 灵活屏幕定位：
   - `PREPARING`：琥珀黄扫频。
   - `LISTENING`：🔴 REC 红色指示灯呼吸脉冲 + 5-Bar 音量与扫频无缝混合波形。
   - `REFINING`：紫色柔和退场。
@@ -108,13 +113,19 @@
 - 系统提示词全面覆盖语气词清洗、术语修正、口误改口覆盖与标点整理。
 
 #### F. WebDAV Sync Engine (`utils/webdav.py`)
-- 支持 `PUT` 上传、`GET` 下载、`PROPFIND` 列出远端备份文件，支持浏览远端历史备份文件并一键恢复至本地。
+- 支持 `jianguoyun` 与 `custom` 供应商，支持 `PUT` 上传、`GET` 下载、`PROPFIND` 列出远端备份文件、时间戳历史命名、最多 5 个备份自动物理清理，支持浏览远端历史备份文件并一键恢复至本地。
 
 #### G. Network Proxy Manager (`utils/proxy.py`)
 - 支持 `http`, `socks4`, `socks5` 协议，统一注入 `HTTP_PROXY` / `HTTPS_PROXY` / `ALL_PROXY` 环境变量。
 
-#### H. Modular Settings Package (`src/ui/settings/`)
-- 拆分为子包：`window.py`, `asr_tab.py`, `llm_tab.py`, `webdav_tab.py`, `proxy_tab.py`, `hotkey_tab.py`, `about_tab.py`。
+#### H. AppLogger Debug Engine (`utils/logger.py`)
+- 开关式日志管理器，开启时在本地 `logs/voice_input_YYYYMMDD.log` 生成带有毫秒级时间戳及 `[VIA PROXY: ...]` 路由标签的 ASR/LLM 明文日志。
+
+#### I. i18n Internationalization Engine (`i18n.py`)
+- 支持 `zh_CN` 与 `en_US` 完整词条映射，调用 `QLocale` 自动适配系统语言。
+
+#### J. Modular Settings Package (`src/ui/settings/`)
+- 拆分为子包：`window.py`, `asr_tab.py`, `llm_tab.py`, `webdav_tab.py`, `proxy_tab.py`, `hotkey_tab.py`, `debug_tab.py`, `about_tab.py`。
 
 ---
 

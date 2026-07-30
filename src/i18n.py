@@ -48,6 +48,13 @@ TRANSLATIONS = {
         "lbl_api_key": "API 密钥 (Key):",
         "lbl_base_url": "服务地址 (Base URL):",
         "lbl_model_name": "模型名称:",
+        "lbl_hotkey": "触发热键:",
+        "lbl_position": "悬浮窗位置:",
+
+        # Capsule Positions
+        "pos_bottom_center": "底部居中",
+        "pos_top_center": "顶部居中",
+        "pos_center": "屏幕中央",
 
         # ASR Tab
         "asr_provider": "ASR 供应商:",
@@ -151,6 +158,13 @@ TRANSLATIONS = {
         "lbl_api_key": "API Key:",
         "lbl_base_url": "Base URL:",
         "lbl_model_name": "Model Name:",
+        "lbl_hotkey": "Trigger Hotkey:",
+        "lbl_position": "Capsule Position:",
+
+        # Capsule Positions
+        "pos_bottom_center": "Bottom Center",
+        "pos_top_center": "Top Center",
+        "pos_center": "Center",
 
         # ASR Tab
         "asr_provider": "ASR Provider:",
