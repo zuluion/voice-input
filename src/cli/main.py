@@ -10,6 +10,7 @@ from typing import Optional
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
+from rich.prompt import Prompt
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
 from src.config import ConfigManager
@@ -21,7 +22,7 @@ from src.audio.recorder import AudioRecorder
 app = typer.Typer(
     name="voice-input-cli",
     help="Voice Input 前后端分离全功能终端命令行工具 (Full-Flow CLI Client)",
-    add_completion=False
+    invoke_without_command=True
 )
 
 daemon_app = typer.Typer(help="管理 Headless 后端守护进程生命周期")
@@ -102,7 +103,6 @@ def config_set(key_path: str, value: str) -> None:
             target[part] = {}
         target = target[part]
 
-    # 类型推断转换
     if value.lower() == "true":
         typed_val = True
     elif value.lower() == "false":
@@ -229,6 +229,51 @@ def record(
         if copy and refined_final_text.strip():
             injector.inject(refined_final_text)
             console.print("[bold green]✓ Text copied to system clipboard![/bold green]")
+
+# --- 交互式 TUI 主菜单 ---
+
+@app.command("interactive")
+def interactive() -> None:
+    """启动 Voice Input 交互式 TUI 终端控制台菜单 (Interactive Console)"""
+    while True:
+        console.print("\n" + Panel(
+            "[bold cyan]🎤 Voice Input 全功能终端交互控制中心 (TUI Console)[/bold cyan]\n\n"
+            "[bold green]1.[/bold green] 🎤 开始全流程语音输入 (Voice Record Session)\n"
+            "[bold green]2.[/bold green] 🔍 检查 Backend Daemon 服务健康状态 (Daemon Status)\n"
+            "[bold green]3.[/bold green] ⚙️  查看系统当前全局配置 (Show Configuration)\n"
+            "[bold green]4.[/bold green] ✏️  修改配置项 (Set Config Option)\n"
+            "[bold green]5.[/bold green] 🔄 触发 WebDAV 配置增量同步 (Sync WebDAV)\n"
+            "[bold red]0.[/bold red] 🚪 退出 TUI 控制台",
+            title="Interactive Main Menu",
+            border_style="cyan"
+        ))
+        
+        choice = Prompt.ask("请选择功能编号", choices=["0", "1", "2", "3", "4", "5"], default="1")
+
+        if choice == "0":
+            console.print("[bold yellow]👋 感谢使用 Voice Input CLI，已退出控制台！[/bold yellow]")
+            break
+        elif choice == "1":
+            dur_str = Prompt.ask("请输入录音秒数 (直接按回车则手动按回车停止)", default="")
+            dur = int(dur_str) if dur_str.isdigit() else None
+            record(duration=dur, raw=False, copy=True)
+        elif choice == "2":
+            daemon_status()
+        elif choice == "3":
+            config_show()
+        elif choice == "4":
+            key = Prompt.ask("请输入配置键路径 (例如: asr.provider 或 llm.provider)")
+            val = Prompt.ask("请输入对应的新值 (例如: xiaomi_mimo 或 ollama)")
+            if key and val:
+                config_set(key_path=key, value=val)
+        elif choice == "5":
+            config_sync()
+
+@app.callback(invoke_without_command=True)
+def main_callback(ctx: typer.Context):
+    """当用户直接运行 python -m src.cli.main 且没有提供子命令时，默认唤起交互式菜单"""
+    if ctx.invoked_subcommand is None:
+        interactive()
 
 def main() -> None:
     app()
