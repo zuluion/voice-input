@@ -16,6 +16,7 @@ from src.config import ConfigManager
 from src.core.engine import CoreEngine
 from src.utils.injector import TextInjector
 from src.utils.logger import logger
+from src.audio.recorder import AudioRecorder
 
 app = typer.Typer(
     name="voice-input-cli",
@@ -31,6 +32,7 @@ app.add_typer(config_app, name="config")
 
 console = Console()
 DEFAULT_DAEMON_URL = "http://127.0.0.1:28080"
+ASCII_BARS = [" ", "▂", "▃", "▄", "▅", "▆", "▇", "█"]
 
 # --- Daemon 管理命令 ---
 
@@ -136,7 +138,7 @@ def record(
 ) -> None:
     """
     【全流程】命令行语音输入体验:
-    启动音频录制 -> 动态 ASCII 音量包络 -> ASR 流式识别 -> LLM 文本精修 -> 自动剪贴板写或 stdout 输出
+    检测录音设备 -> 启动音频录制 -> 动态 ASCII 音量包络 -> ASR 流式识别 -> LLM 文本精修 -> 自动剪贴板写或 stdout 输出
     """
     cm = ConfigManager()
     engine = CoreEngine(cm)
@@ -144,6 +146,9 @@ def record(
 
     raw_partial_text = ""
     refined_final_text = ""
+    total_captured_bytes = 0
+
+    device_name = AudioRecorder.get_input_device_name()
 
     def on_partial_asr(text: str, is_final: bool):
         nonlocal raw_partial_text
@@ -155,24 +160,38 @@ def record(
 
     if not raw:
         console.print(Panel(
-            "[bold green]🎤 Voice Input CLI Session Started[/bold green]\n"
+            f"[bold green]🎤 Voice Input CLI Session Started[/bold green]\n"
+            f"• Device: [bold yellow]{device_name}[/bold yellow]\n"
             f"• ASR Provider: [cyan]{cm.get('asr', 'provider', default='xiaomi_mimo')}[/cyan]\n"
             f"• LLM Provider: [cyan]{cm.get('llm', 'provider', default='ollama')}[/cyan]\n"
-            "[dim]Press ENTER to stop recording...[/dim]" if not duration else f"[dim]Recording for {duration} seconds...[/dim]",
+            + ("[dim]Press ENTER to stop recording...[/dim]" if not duration else f"[dim]Recording for {duration} seconds...[/dim]"),
             border_style="green"
         ))
 
     engine.start_session()
 
-    # 如果有 sounddevice 可用则拉起录音，否则等待模拟音轨
-    try:
-        from src.audio.recorder import AudioRecorder
-        audio_recorder = AudioRecorder()
-        audio_recorder.audio_chunk_ready.connect(engine.process_audio_chunk)
-        audio_recorder.start()
-    except Exception as e:
-        logger.log("CLI Record", f"Microphone recorder error or fallback: {e}")
-        audio_recorder = None
+    audio_recorder = AudioRecorder()
+
+    def on_audio_chunk(chunk: bytes):
+        nonlocal total_captured_bytes
+        total_captured_bytes += len(chunk)
+        engine.process_audio_chunk(chunk)
+
+    def on_volume_change(bars: list):
+        if not raw:
+            ascii_str = "".join(ASCII_BARS[min(len(ASCII_BARS)-1, int(v * (len(ASCII_BARS)-1)))] for v in bars)
+            kb_captured = total_captured_bytes / 1024.0
+            console.print(f"[green]Recording...[/green] Audio Level: [{ascii_str}] Sent: {kb_captured:.1f} KB", end="\r")
+
+    def on_audio_error(err_msg: str):
+        if not raw:
+            console.print(f"\n[bold red]✗ Audio Capture Error:[/bold red] {err_msg}")
+
+    audio_recorder.on_chunk_cb = on_audio_chunk
+    audio_recorder.on_volume_cb = on_volume_change
+    audio_recorder.on_error_cb = on_audio_error
+
+    audio_recorder.start()
 
     if duration:
         time.sleep(duration)
@@ -182,10 +201,10 @@ def record(
         except (KeyboardInterrupt, EOFError):
             pass
 
-    if audio_recorder:
-        audio_recorder.stop()
+    audio_recorder.stop()
 
     if not raw:
+        console.print(f"\n[dim]Microphone captured total {total_captured_bytes / 1024.0:.1f} KB audio PCM data.[/dim]")
         with Progress(
             SpinnerColumn(),
             TextColumn("[bold yellow]Refining text via LLM Engine...[/bold yellow]"),
