@@ -1,4 +1,0 @@
-feat(cli): add ASR and LLM provider centers aligned with Desktop UI
-
-修改文件：
-└── src/cli/main.py    — 实现与 Desktop UI 100% 对齐的 ASR/LLM 服务商状态列表与二级参数配置中心
