@@ -3,6 +3,8 @@
 语音输入方案，暂时只支持 Windows 平台。
 
 ## 项目特点与设计
+- **前后端分离架构与无头后端守护进程 (Headless Core Daemon)**：后端核心引擎剥离为基于 FastAPI + WebSockets 的无头守护进程 (`src/backend/main_daemon.py`)，提供标准的 RESTful 控制面 API (`/api/v1/*`) 与双向实时 WebSocket 数据流 (`/ws/v1/voice-session`)。
+- **全流程 CLI 命令行工具 (`voice-input-cli`)**：基于 Typer + Rich 打造的全功能终端客户端，支持守护进程管理 (`daemon start/stop/status`)、全流程语音输入与 UNIX 管道 (`voice-input-cli record --raw >> notes.md`)，以及内建 ASR 与 7 大 LLM 供应商管理中心的 Rich TUI 交互式控制台。
 - **全局长按热键触发与交互录制**：按住热键开始录音，松开自动转录精修并注入文本。设置界面提供图形化交互式热键录制（推荐 `[ Right Control ]` / `[ Space ]` 键帽显示）。
 - **多 Provider ASR 深度接入**：灵活接入小米 MiMo (`mimo-v2.5-asr`)、豆包 (Volcengine)、通义千问 (DashScope) 及 OpenAI 兼容语音识别 API。
 - **7 大 LLM 供应商模式与口误中途改口处理**：支持 OpenAI, DeepSeek, Xiaomi, 阿里云通义千问, 本地 GGUF 模型, 本地 Ollama, Custom 自定义 7 大供应商。不仅自动擦除语气冗余与谐音错字，更可识别“不对”、“算了”、“改成”等改口信号，自动覆盖旧表述并完美保留句式主干。
@@ -103,7 +105,32 @@ python src/main.py
 
 ---
 
-### 5. 常规控制与版本说明
+### 5. 💻 命令行终端 CLI (`voice-input-cli`) 使用指南
+
+系统内置全功能终端客户端，无需图形界面也可在无头服务器、SSH 远程终端或控制台中使用：
+
+```powershell
+# 1. 启动 Rich 交互控制台 TUI (包含 ASR 与 7 大 LLM 服务商配置中心)
+uv run python -m src.cli.main interactive
+# 或直接运行
+uv run python -m src.cli.main
+
+# 2. 全流程命令行语音输入 (控制台实时显示 ASCII 音量波形与 ASR 预览)
+uv run python -m src.cli.main record
+
+# 3. 管道重定向模式 (纯文本输出至 stdout，可重定向或对接 UNIX 管道)
+uv run python -m src.cli.main record --raw >> notes.md
+uv run python -m src.cli.main record --raw | clip
+
+# 4. 后端无头守护进程 (Headless Daemon) 生命周期管理
+uv run python -m src.cli.main daemon status   # 检查 Backend 服务健康状态
+uv run python -m src.cli.main daemon start    # 启动无头 Backend 守护进程 (127.0.0.1:28080)
+uv run python -m src.cli.main daemon stop     # 停止无头 Backend 守护进程
+```
+
+---
+
+### 6. 常规控制与版本说明
 - **滚动版本号**：项目版本统一记录在根目录 [VERSION](VERSION) 文件中（格式：`YYYY.MM.DD.xxx`）。
 - **临时开关**：右键托盘图标取消勾选 **`Enabled`** 即可快捷禁用/启用。
 - **退出应用**：右键托盘图标点击 **`Quit`**。

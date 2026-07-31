@@ -20,3 +20,9 @@
 - **Same-Loop EventBus Task Dispatch**: `EventBus.emit()` detects when execution is already on the target `asyncio` event loop and uses `loop.create_task()` directly, ensuring coroutines yield control cleanly and avoiding threadsafe futures deadlocks.
 - **Loopback Proxy Bypass (`NO_PROXY`)**: `apply_proxy_config()` automatically sets `NO_PROXY="localhost,127.0.0.1,::1"`, keeping internal REST/WebSocket IPC traffic isolated from external proxy routes (e.g. port 7890).
 
+## 5. Decoupled Headless Core Architecture & Full-Flow CLI Integration
+- **IPC Seam Decoupling**: Core business state machine and streaming pipeline were decoupled from PySide6 GUI into a standalone headless daemon (`src/backend/main_daemon.py`), exposing RESTful control plane APIs and WebSocket data plane channels.
+- **Client Hardware Abstraction Layer (HAL)**: Hardware-specific bindings (microphone recording, hotkey listening, Win32 text injection) are isolated to client-side layers, allowing Linux/SSH and headless server environments to consume core ASR/LLM capabilities.
+- **Full-Flow Rich CLI TUI**: `voice-input-cli` provides an interactive TUI console (`src/cli/main.py`) with complete ASR and 7 LLM provider configuration centers, real-time ASCII volume bar rendering (`Audio Level: [ ▂▄...]`), UNIX pipeline `--raw` stdout streaming, and cross-platform process termination (`daemon stop`).
+
+

@@ -32,4 +32,9 @@
   - [x] Optimized `EventBus.emit()` for same-loop `create_task` dispatch.
   - [x] Configured `NO_PROXY` / `no_proxy` loopback bypass in `apply_proxy_config()`.
   - [x] Full regression test suite passed (48/48 passed).
+- [x] **Phase 6: CLI Daemon Stop Command & Comprehensive Doc Sync**
+  - [x] Added `voice-input-cli daemon stop` command with cross-platform PID termination.
+  - [x] Verified full regression test suite (49/49 passed).
+  - [x] Synchronized all project documentation (README, Spec, Changelog, Version).
+
 

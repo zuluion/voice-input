@@ -15,6 +15,8 @@
 基于 Python 3.10+ 与 PySide6 开发一款 Windows 平台的系统托盘语音输入法应用。
 
 该应用具备以下核心特性：
+- **前后端分离架构与无头后端守护进程 (Headless Core Daemon)**：后端核心引擎下沉为独立无头守护进程 (`src/backend/main_daemon.py`)，基于 FastAPI + WebSockets 提供标准 RESTful 控制面 (`/api/v1/*`) 与双向实时 WebSocket 数据流 (`/ws/v1/voice-session`)。
+- **全流程 CLI 命令行客户端 (`voice-input-cli`)**：提供无 GUI 环境下的终端全流程命令行工具 (`src/cli/main.py`)，支持 Daemon 生命周期管理 (`daemon start/stop/status`)、命令行语音录制与 UNIX 管道 (`record --raw`)，以及内建 ASR 与 7 大 LLM 供应商管理中心的 Rich TUI 交互式控制台。
 - **全局长按热键触发**：按住指定热键（推荐 `Right Control` 或 `Alt+Space`）即刻开始录音，松开按键自动精修并注入文本。支持交互式按键录制。
 - **多 Provider ASR 架构**：深度接入小米 MiMo (`mimo-v2.5-asr` Base64 Audio API)、豆包 (Volcengine)、通义千问 (DashScope) 以及 OpenAI 兼容的 `/v1/audio/transcriptions` 接口。
 - **三阶段视觉交互与多位置胶囊悬浮窗**：置顶无任务栏图标的胶囊浮窗，具备 30 FPS 动态呼吸与波形演进，支持底部居中、顶部居中与屏幕中央定位：

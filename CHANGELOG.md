@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2026.07.31.001] - 2026-07-31
+
+### 🚀 Decoupled Architecture & Full-Flow CLI Client (`voice-input-cli`)
+- **Headless Core Daemon (FastAPI & WebSockets)**: Extracted core engine into a standalone headless daemon (`src/backend/main_daemon.py`), offering RESTful control plane APIs (`/api/v1/health`, `/api/v1/config`, `/api/v1/config/sync`) and bidirectional WebSocket stream channels (`/ws/v1/voice-session`).
+- **Core Engine & Async EventBus**: Created `CoreEngine` (`src/core/engine.py`) and a lightweight Python `asyncio` Pub/Sub `EventBus` (`src/core/event_bus.py`), completely decoupling core business state machines from PySide6 GUI dependencies.
+- **Full-Flow CLI Tool (`voice-input-cli`)**: Built a feature-complete terminal command-line tool (`src/cli/main.py`) powered by `Typer` and `Rich`:
+  - `daemon`: Manage backend process lifecycle (`start`, `stop`, `status`).
+  - `config`: View, quick-set, and trigger WebDAV sync (`show`, `set`, `sync`).
+  - `interactive`: Rich TUI interactive console menu with ASR and 7 LLM provider management centers (local, ollama, deepseek, qwen, openai, xiaomi, custom).
+  - `record`: Full-flow CLI voice recording session with real-time ASCII volume bar (`Audio Level: [ ▂▄...]`), ASR live preview, UNIX pipeline `--raw` stdout redirect, and automatic clipboard sync.
+- **Thin PySide6 Desktop Client**: Converted `VoiceInputController` into a thin WebSocket client with automatic daemon process lifecycle management (`DaemonProcessManager`).
+- **Proxy Bypass for Local IPC**: Updated proxy utilities to automatically bypass system HTTP proxies for internal `127.0.0.1` IPC calls, preventing proxy loopbacks or connection refusals.
+
 ## [2026.07.30.018] - 2026-07-30
 
 ### 🛡️ Offline Model Detection & Win32 Job Process Tree Teardown
