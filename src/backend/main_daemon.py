@@ -161,8 +161,16 @@ async def voice_session_websocket(websocket: WebSocket) -> None:
 
 def start_daemon(host: str = DEFAULT_DAEMON_HOST, port: int = DEFAULT_DAEMON_PORT) -> None:
     """本地拉起 Daemon 守护进程"""
+    import sys
+    import os
+    if sys.stdout is None:
+        sys.stdout = open(os.devnull, 'w')
+    if sys.stderr is None:
+        sys.stderr = open(os.devnull, 'w')
+
     import uvicorn
-    uvicorn.run(app, host=host, port=port, log_level="info")
+    uvicorn.run(app, host=host, port=port, log_level="info", use_colors=False)
+
 
 if __name__ == "__main__":
     start_daemon()

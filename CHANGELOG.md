@@ -2,7 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2026.07.31.003] - 2026-07-31
+
+### 🛠️ PyInstaller --noconsole Mode Uvicorn Logging Crash Fix
+- **Stdout & Stderr Null Safety Guard**: Added fallback dummy stream guards (`open(os.devnull, 'w')`) when `sys.stdout` or `sys.stderr` is `None` under PyInstaller `--noconsole` execution mode in `src/main.py` and `src/backend/main_daemon.py`.
+- **Uvicorn Color Log Disabled**: Set `use_colors=False` in `uvicorn.run()` within `start_daemon()`, preventing `uvicorn.logging.DefaultFormatter` from invoking `sys.stdout.isatty()` and raising `AttributeError: 'NoneType' object has no attribute 'isatty'`.
+
 ## [2026.07.31.002] - 2026-07-31
+
 
 ### 🛠️ Frozen PyInstaller Executable Recursion Fix & CLI Entry Dispatch
 - **Headless Daemon Dispatch in `src/main.py`**: Added `multiprocessing.freeze_support()` and `--headless-daemon` command-line argument handling in `main()`, directly invoking `start_daemon()` when spawned in headless mode. This completely fixes the recursive process creation bug in frozen PyInstaller single-file executables and restores the system tray icon rendering.

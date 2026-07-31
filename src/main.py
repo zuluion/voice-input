@@ -5,6 +5,13 @@ import threading
 import requests
 from typing import Optional, Dict, Any
 
+# Guard against PyInstaller --noconsole mode where sys.stdout and sys.stderr are None
+if sys.stdout is None:
+    sys.stdout = open(os.devnull, 'w')
+if sys.stderr is None:
+    sys.stderr = open(os.devnull, 'w')
+
+
 # Ensure project root & PyInstaller _MEIPASS are in sys.path
 if getattr(sys, 'frozen', False):
     base_dir = getattr(sys, '_MEIPASS', os.path.abspath(os.path.dirname(__file__)))
