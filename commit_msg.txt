@@ -1,4 +1,0 @@
-feat(cli): enhance provider detail config panel with complete fields and safe prompt cancellation
-
-修改文件：
-└── src/cli/main.py    — 增加 safe_prompt（支持 Ctrl+C / q 随时中途取消返回），并全量透显必填与选填配置字段
