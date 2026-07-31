@@ -6,7 +6,7 @@
   "architecture": {
     "64bit": {
       "url": "https://github.com/zuluion/voice-input/releases/download/v2026.07.30.018/VoiceInput.exe",
-      "hash": "0b82d9f57b1c7dd996b51cbfe91f94eac354870e5b774156db140ae9c2a4748a"
+      "hash": "08fe627f03543d166dedebcac9908a0febb46425c730890509e6cd82d2feed97"
     }
   },
   "bin": "VoiceInput.exe",
