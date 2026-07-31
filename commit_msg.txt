@@ -1,4 +1,0 @@
-feat(cli): add interactive TUI console menu to voice-input-cli
-
-修改文件：
-└── src/cli/main.py    — 实现交互式终端控制台主菜单 (interactive) 与无参数自动唤起
