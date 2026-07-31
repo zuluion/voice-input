@@ -1,8 +1,0 @@
-fix(proxy): bypass system HTTP proxy for internal 127.0.0.1 IPC requests
-
-修改文件：
-├── src/
-│   ├── cli/main.py                    — 内部 API 请求增加 proxies 绕过系统代理拦截
-│   ├── main.py                        — 瘦客户端 API 请求增加 proxies 绕过系统代理拦截
-│   └── utils/
-│       └── daemon_process.py          — 连通检查增加 proxies 绕过系统代理拦截
