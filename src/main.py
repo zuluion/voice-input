@@ -172,7 +172,7 @@ class VoiceInputController(QObject):
 
     def _run_webdav_sync(self) -> None:
         try:
-            res = requests.post(f"{DEFAULT_DAEMON_URL}/api/v1/config/sync", timeout=10)
+            res = requests.post(f"{DEFAULT_DAEMON_URL}/api/v1/config/sync", timeout=10, proxies={"http": None, "https": None})
             if res.status_code == 200:
                 logger.log("Main", "WebDAV Auto-sync succeeded! Reloading local config...")
                 self.config_manager.config = self.config_manager.load_config()
@@ -260,7 +260,7 @@ class VoiceInputController(QObject):
     def _on_config_saved(self) -> None:
         # 配置通过 REST API 同步提交给 Daemon
         try:
-            requests.put(f"{DEFAULT_DAEMON_URL}/api/v1/config", json=self.config_manager.config, timeout=3)
+            requests.put(f"{DEFAULT_DAEMON_URL}/api/v1/config", json=self.config_manager.config, timeout=3, proxies={"http": None, "https": None})
         except Exception as e:
             logger.log("Main", f"Failed to sync updated config to Daemon: {e}")
 

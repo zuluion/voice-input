@@ -38,7 +38,7 @@ DEFAULT_DAEMON_URL = "http://127.0.0.1:28080"
 def daemon_status(url: str = DEFAULT_DAEMON_URL) -> None:
     """检查后端守护进程运行健康状态与连接连通性"""
     try:
-        res = requests.get(f"{url}/api/v1/health", timeout=3)
+        res = requests.get(f"{url}/api/v1/health", timeout=3, proxies={"http": None, "https": None})
         if res.status_code == 200:
             data = res.json()
             console.print(Panel(
@@ -118,7 +118,7 @@ def config_set(key_path: str, value: str) -> None:
 def config_sync(url: str = DEFAULT_DAEMON_URL) -> None:
     """触发 WebDAV 手动配置同步"""
     try:
-        res = requests.post(f"{url}/api/v1/config/sync", timeout=10)
+        res = requests.post(f"{url}/api/v1/config/sync", timeout=10, proxies={"http": None, "https": None})
         if res.status_code == 200:
             console.print(f"[bold green]✓ WebDAV Sync Succeeded:[/bold green] {res.json().get('message')}")
         else:

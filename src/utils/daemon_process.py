@@ -20,7 +20,7 @@ class DaemonProcessManager:
     def is_daemon_running(self) -> bool:
         """检查 Daemon 是否已经在 127.0.0.1:28080 正常运行"""
         try:
-            res = requests.get(f"{self.daemon_url}/api/v1/health", timeout=1.5)
+            res = requests.get(f"{self.daemon_url}/api/v1/health", timeout=1.5, proxies={"http": None, "https": None})
             return res.status_code == 200 and res.json().get("status") == "ok"
         except Exception:
             return False
