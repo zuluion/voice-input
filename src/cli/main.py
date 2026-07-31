@@ -66,6 +66,32 @@ def daemon_start(port: int = 28080) -> None:
     from src.backend.main_daemon import start_daemon
     start_daemon(port=port)
 
+@daemon_app.command("stop")
+def daemon_stop(port: int = 28080) -> None:
+    """停止正在运行的本地无头后端守护进程"""
+    import subprocess
+    console.print(f"[bold yellow]Stopping Core Backend Daemon on port {port}...[/bold yellow]")
+    try:
+        if sys.platform == "win32":
+            out = subprocess.check_output(f"netstat -ano | findstr :{port}", shell=True, text=True)
+            pids = set()
+            for line in out.strip().splitlines():
+                parts = line.split()
+                if len(parts) >= 5 and "LISTENING" in parts:
+                    pids.add(parts[-1])
+            if pids:
+                for pid in pids:
+                    subprocess.run(f"taskkill /F /PID {pid}", shell=True, capture_output=True)
+                console.print(f"[bold green]✓ Daemon process (PID: {', '.join(pids)}) stopped successfully.[/bold green]")
+            else:
+                console.print("[dim]No running Daemon process found on target port.[/dim]")
+        else:
+            subprocess.run(f"fuser -k {port}/tcp", shell=True, capture_output=True)
+            console.print("[bold green]✓ Daemon stopped successfully.[/bold green]")
+    except Exception as e:
+        console.print(f"[bold red]No active Daemon process found on port {port} or failed to stop: {e}[/bold red]")
+
+
 # --- Config 管理命令 ---
 
 @config_app.command("show")

@@ -64,3 +64,11 @@ def test_cli_interactive_menu():
     assert "Voice Input 全功能终端交互控制中心" in result.stdout
     assert "已退出控制台" in result.stdout
 
+def test_cli_daemon_stop():
+    with patch("subprocess.check_output", return_value="TCP 127.0.0.1:28080 0.0.0.0:0 LISTENING 99999"):
+        with patch("subprocess.run") as mock_run:
+            result = runner.invoke(app, ["daemon", "stop"])
+            assert result.exit_code == 0
+            assert "Daemon process" in result.stdout
+
+
