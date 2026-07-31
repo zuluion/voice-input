@@ -1,6 +1,0 @@
-fix(audio): support pure python callbacks in AudioRecorder and show mic info in CLI
-
-修改文件：
-├── src/
-│   ├── audio/recorder.py              — 支持纯 Python 原生回调与默认麦克风设备名称查询
-│   └── cli/main.py                    — CLI record 增加麦克风设备检测显示与动态 ASCII 音量包络动画
