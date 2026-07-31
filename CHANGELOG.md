@@ -2,7 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2026.07.31.004] - 2026-07-31
+
+### 🛠️ Fixed GBK UnicodeEncodeError & CI/CD Build Size Optimization
+- **Non-blocking Audit Log Print**: Wrapped end-to-end execution trace print block in `_on_processing_finished()` within a `try...except` block in `src/main.py`, ensuring console print failures never prevent text injection or UI state transition.
+- **UTF-8 Encoded Dummy Stream**: Updated `os.devnull` fallback stream initialization to explicitly specify `encoding='utf-8', errors='ignore'` in `src/main.py` and `src/backend/main_daemon.py`, preventing Windows GBK `UnicodeEncodeError` when writing Emoji characters (`🎤`, `🎙️`, `🤖`).
+- **CI/CD Lightweight Build**: Refactored `.github/workflows/release.yml` to build inside an isolated `uv venv` environment instead of system Python, reducing GitHub Actions release executable size by ~15MB (down to ~60MB+, matching local builds) and accelerating PyInstaller packaging speed.
+
+
 ## [2026.07.31.003] - 2026-07-31
+
 
 ### 🛠️ PyInstaller --noconsole Mode Uvicorn Logging Crash Fix
 - **Stdout & Stderr Null Safety Guard**: Added fallback dummy stream guards (`open(os.devnull, 'w')`) when `sys.stdout` or `sys.stderr` is `None` under PyInstaller `--noconsole` execution mode in `src/main.py` and `src/backend/main_daemon.py`.

@@ -7,9 +7,10 @@ from typing import Optional, Dict, Any
 
 # Guard against PyInstaller --noconsole mode where sys.stdout and sys.stderr are None
 if sys.stdout is None:
-    sys.stdout = open(os.devnull, 'w')
+    sys.stdout = open(os.devnull, 'w', encoding='utf-8', errors='ignore')
 if sys.stderr is None:
-    sys.stderr = open(os.devnull, 'w')
+    sys.stderr = open(os.devnull, 'w', encoding='utf-8', errors='ignore')
+
 
 
 # Ensure project root & PyInstaller _MEIPASS are in sys.path
@@ -291,23 +292,27 @@ class VoiceInputController(QObject):
         llm_proxy = meta.get("llm_proxy", "DIRECT")
         refined_text = text
 
-        print(
-            "\n" + "=" * 80 + "\n"
-            f" 🎤 语音输入全流程端到端审计日志 (End-to-End Execution Trace)\n"
-            + "=" * 80 + "\n"
-            f" 🎙️  ASR 识别阶段:\n"
-            f"     • 服务商 (Provider): {asr_p}\n"
-            f"     • 网络代理 (Proxy):    {asr_proxy}\n"
-            f"     • 原始识别文本 (Raw ASR): '{raw_text}'\n\n"
-            f" 🤖 LLM 精修阶段:\n"
-            f"     • 服务商 (Provider): {llm_p}\n"
-            f"     • 模型名称 (Model):   {llm_m}\n"
-            f"     • 网络代理 (Proxy):    {llm_proxy}\n"
-            f"     • 投喂原始文本 (Input): '{raw_text}'\n"
-            f"     • 精修最终输出 (Output): '{refined_text}'\n"
-            + "=" * 80,
-            flush=True
-        )
+        try:
+            print(
+                "\n" + "=" * 80 + "\n"
+                f" 🎤 语音输入全流程端到端审计日志 (End-to-End Execution Trace)\n"
+                + "=" * 80 + "\n"
+                f" 🎙️  ASR 识别阶段:\n"
+                f"     • 服务商 (Provider): {asr_p}\n"
+                f"     • 网络代理 (Proxy):    {asr_proxy}\n"
+                f"     • 原始识别文本 (Raw ASR): '{raw_text}'\n\n"
+                f" 🤖 LLM 精修阶段:\n"
+                f"     • 服务商 (Provider): {llm_p}\n"
+                f"     • 模型名称 (Model):   {llm_m}\n"
+                f"     • 网络代理 (Proxy):    {llm_proxy}\n"
+                f"     • 投喂原始文本 (Input): '{raw_text}'\n"
+                f"     • 精修最终输出 (Output): '{refined_text}'\n"
+                + "=" * 80,
+                flush=True
+            )
+        except Exception:
+            pass
+
 
         logger.log("Main Thin Client", f"Refined text received from Daemon -> Injecting text: '{text}'")
         if text.strip():

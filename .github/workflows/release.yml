@@ -73,11 +73,13 @@ jobs:
 
       - name: Install dependencies via uv
         run: |
-          uv pip install --system -r requirements.txt pyinstaller pillow
+          uv venv
+          uv pip install -r requirements.txt pyinstaller pillow
 
       - name: Build Standalone Executable with PyInstaller
         run: |
-          pyinstaller --noconsole --onefile --icon="assets/logo.ico" --add-data "assets/logo.png;assets" --name "VoiceInput" --paths "." src/main.py
+          uv run pyinstaller --noconsole --onefile --icon="assets/logo.ico" --add-data "assets/logo.png;assets" --name "VoiceInput" --paths "." src/main.py
+
 
       - name: Compute SHA256 Hash & Update Scoop Manifest
         shell: pwsh

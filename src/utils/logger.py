@@ -104,16 +104,18 @@ class AppLogger:
 
         # 打印至控制台
         out = self._original_stdout if (self._tee_active and self._original_stdout) else sys.stdout
-        try:
-            out.write(formatted + "\n")
-            out.flush()
-        except Exception:
+        if out is not None:
             try:
-                encoding = getattr(out, "encoding", "utf-8") or "utf-8"
-                safe_str = formatted.encode(encoding, errors="replace").decode(encoding, errors="replace")
-                out.write(safe_str + "\n")
+                out.write(formatted + "\n")
                 out.flush()
             except Exception:
-                pass
+                try:
+                    encoding = getattr(out, "encoding", "utf-8") or "utf-8"
+                    safe_str = formatted.encode(encoding, errors="replace").decode(encoding, errors="replace")
+                    out.write(safe_str + "\n")
+                    out.flush()
+                except Exception:
+                    pass
+
 
 logger = AppLogger.get_instance()

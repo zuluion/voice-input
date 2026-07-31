@@ -1,6 +1,17 @@
+import sys
+import os
+
+# Guard against PyInstaller --noconsole mode where sys.stdout and sys.stderr are None
+if sys.stdout is None:
+    sys.stdout = open(os.devnull, 'w', encoding='utf-8', errors='ignore')
+if sys.stderr is None:
+    sys.stderr = open(os.devnull, 'w', encoding='utf-8', errors='ignore')
+
+
 import asyncio
 import json
 from typing import Dict, Any, Optional
+
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Body
 from src.config import ConfigManager, DEFAULT_DAEMON_HOST, DEFAULT_DAEMON_PORT
 from src.core.engine import CoreEngine
