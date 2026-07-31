@@ -29,7 +29,10 @@ def get_app_version() -> str:
                         return ver
             except Exception:
                 pass
-    return "2026.07.30.011"
+    from datetime import datetime
+    return f"{datetime.now().strftime('%Y.%m.%d')}.001"
+
+
 
 def get_logo_path() -> str:
     """获取 Logo 图片的绝对路径 (统一存放在根目录 assets/logo.png)。"""

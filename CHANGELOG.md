@@ -2,7 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2026.07.31.005] - 2026-07-31
+
+### 🛠️ Fixed Single-Source VERSION File Packaging & Executable Size Reduction
+- **Single-Source VERSION Asset Bundling**: Added `--add-data "VERSION;."` to PyInstaller build configuration in `.github/workflows/release.yml`, ensuring executable binaries dynamically read the latest single-source version number from the bundled `VERSION` asset at runtime.
+- **Heavy Qt Module Exclusion**: Added `--exclude-module` for heavy unused Qt modules (`Qt3D`, `QtQml`, `QtQuick`, `QtPdf`, `QtVirtualKeyboard`, `QtWebEngineCore`, `QtDesigner`, `QtTest`) to PyInstaller build command, completely eliminating 15MB+ of redundant DLL binaries in GitHub Actions release builds (bringing CI/CD build size down to ~60MB).
+
 ## [2026.07.31.004] - 2026-07-31
+
 
 ### 🛠️ Fixed GBK UnicodeEncodeError & CI/CD Build Size Optimization
 - **Non-blocking Audit Log Print**: Wrapped end-to-end execution trace print block in `_on_processing_finished()` within a `try...except` block in `src/main.py`, ensuring console print failures never prevent text injection or UI state transition.

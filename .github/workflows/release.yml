@@ -78,7 +78,8 @@ jobs:
 
       - name: Build Standalone Executable with PyInstaller
         run: |
-          uv run pyinstaller --noconsole --onefile --icon="assets/logo.ico" --add-data "assets/logo.png;assets" --name "VoiceInput" --paths "." src/main.py
+          uv run pyinstaller --noconsole --onefile --icon="assets/logo.ico" --add-data "assets/logo.png;assets" --add-data "VERSION;." --exclude-module PySide6.Qt3DAnimation --exclude-module PySide6.Qt3DCore --exclude-module PySide6.Qt3DExtras --exclude-module PySide6.Qt3DInput --exclude-module PySide6.Qt3DRender --exclude-module PySide6.QtQml --exclude-module PySide6.QtQuick --exclude-module PySide6.QtPdf --exclude-module PySide6.QtPdfWidgets --exclude-module PySide6.QtVirtualKeyboard --exclude-module PySide6.QtWebEngineCore --exclude-module PySide6.QtWebEngineWidgets --exclude-module PySide6.QtDesigner --exclude-module PySide6.QtTest --name "VoiceInput" --paths "." src/main.py
+
 
 
       - name: Compute SHA256 Hash & Update Scoop Manifest
