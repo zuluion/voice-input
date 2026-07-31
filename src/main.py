@@ -342,6 +342,14 @@ class VoiceInputController(QObject):
         QApplication.quit()
 
 def main() -> None:
+    import multiprocessing
+    multiprocessing.freeze_support()
+
+    if "--headless-daemon" in sys.argv:
+        from src.backend.main_daemon import start_daemon
+        start_daemon()
+        return
+
     app = QApplication(sys.argv)
     app.setQuitOnLastWindowClosed(False)
 

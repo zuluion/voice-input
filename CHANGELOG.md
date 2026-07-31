@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2026.07.31.002] - 2026-07-31
+
+### 🛠️ Frozen PyInstaller Executable Recursion Fix & CLI Entry Dispatch
+- **Headless Daemon Dispatch in `src/main.py`**: Added `multiprocessing.freeze_support()` and `--headless-daemon` command-line argument handling in `main()`, directly invoking `start_daemon()` when spawned in headless mode. This completely fixes the recursive process creation bug in frozen PyInstaller single-file executables and restores the system tray icon rendering.
+- **Unit Test Coverage**: Added `test_main_headless_daemon_dispatch` in `tests/test_thin_client.py` to ensure `--headless-daemon` flag dispatches daemon execution without initializing `QApplication`.
+
 ## [2026.07.31.001] - 2026-07-31
 
 ### 🚀 Decoupled Architecture & Full-Flow CLI Client (`voice-input-cli`)

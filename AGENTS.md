@@ -39,7 +39,7 @@ type(scope): short description in english
 - **type**：`feat` / `fix` / `refactor` / `chore` / `docs` / `test` / `style` / `perf`
 - **scope**：（可选）描述受影响的模块（小写英文，如 `asr`, `ui`, `audio`, `injector`）。
 - **description**：使用英文，祈使句（如 `add`, `fix`, `update`），首字母小写，结尾**不加句号**。
-- **修改文件**：使用树状结构完整列出所有暂存的变更文件，每个文件使用 `—` 分隔并附带简要变更说明。
+- **修改文件**：使用树状结构完整列出所有暂存的变更文件，每个文件使用 `—` 分隔并附带简要变更说明（**变更说明统一使用中文**）。
 
 ### 分支命名规范
 ```text

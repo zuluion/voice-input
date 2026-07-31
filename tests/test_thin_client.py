@@ -25,3 +25,12 @@ def test_daemon_process_manager_start_and_stop():
 
     # 停止无崩溃
     manager.stop_daemon()
+
+def test_main_headless_daemon_dispatch():
+    import sys
+    from src.main import main
+    with patch.object(sys, 'argv', ['VoiceInput', '--headless-daemon']):
+        with patch('src.backend.main_daemon.start_daemon') as mock_start_daemon:
+            main()
+            mock_start_daemon.assert_called_once()
+
