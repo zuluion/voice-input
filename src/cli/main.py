@@ -143,13 +143,15 @@ ASR_PROVIDERS = [
     ("openai", "OpenAI Whisper REST")
 ]
 
+# 核心 7 大 LLM 供应商矩阵 (与 AGENTS.md 及 config 完备对齐)
 LLM_PROVIDERS = [
-    ("ollama", "本地 Ollama 模型"),
+    ("local", "系统内置离线模型 (内置 Ollama 引擎 - 默认 qwen2.5:1.5b)"),
+    ("ollama", "自定义 Ollama 服务 (Ollama REST API Endpoint)"),
     ("deepseek", "DeepSeek LLM"),
-    ("doubao", "火山豆包 LLM"),
     ("qwen", "阿里通义千问 LLM"),
     ("openai", "OpenAI LLM"),
-    ("xiaomi", "小米 LLM")
+    ("xiaomi", "小米 LLM"),
+    ("custom", "自定义 OpenAI 兼容 Endpoint (Custom API)")
 ]
 
 def safe_prompt(prompt_text: str, default_val: str = "") -> Optional[str]:
@@ -166,21 +168,17 @@ def safe_prompt(prompt_text: str, default_val: str = "") -> Optional[str]:
 
 def check_asr_provider_status(asr_cfg: Dict[str, Any], p_id: str) -> str:
     sub = asr_cfg.get(p_id, {})
-    if p_id == "xiaomi_mimo":
-        has_id = bool(sub.get("app_id"))
-        has_sec = bool(sub.get("app_secret"))
-        return "[bold green]✓ 已配置 (AppID/Secret)[/bold green]" if (has_id and has_sec) else "[bold yellow]⚠️ 缺少 AppID/Secret[/bold yellow]"
-    elif p_id == "doubao":
+    if p_id == "doubao":
         has_id = bool(sub.get("appid"))
         has_tok = bool(sub.get("token"))
         return "[bold green]✓ 已配置 (AppID/Token)[/bold green]" if (has_id and has_tok) else "[bold yellow]⚠️ 缺少 AppID/Token[/bold yellow]"
     else:
         has_key = bool(sub.get("api_key") or asr_cfg.get("api_key"))
-        return "[bold green]✓ 已配置 (API Key)[/bold green]" if has_key else "[bold red]✗ 未配置 Key[/bold red]"
+        return "[bold green]✓ 已配置 (API Key)[/bold green]" if has_key else "[bold red]✗ 未配置 API Key[/bold red]"
 
 def check_llm_provider_status(llm_cfg: Dict[str, Any], p_id: str) -> str:
     sub = llm_cfg.get(p_id, {})
-    if p_id == "ollama":
+    if p_id in ["ollama", "local"]:
         model = sub.get("model", "qwen2.5:1.5b")
         return f"[bold green]✓ 就绪 ({model})[/bold green]"
     else:
@@ -204,13 +202,15 @@ def interactive_asr_detail(p_id: str, p_name: str) -> None:
 
         table.add_row("全局激活状态", "[bold green]⚡ 当前全局生效[/bold green]" if is_active else "[dim]未激活[/dim]")
 
-        if p_id == "xiaomi_mimo":
-            table.add_row("AppID (必填)", str(sub.get("app_id") or "[red](未设置)[/red]"))
-            table.add_row("AppSecret (必填)", f"{str(sub.get('app_secret', ''))[:4]}****" if sub.get("app_secret") else "[red](未设置)[/red]")
-        elif p_id == "doubao":
+        if p_id == "doubao":
             table.add_row("AppID (必填)", str(sub.get("appid") or "[red](未设置)[/red]"))
             table.add_row("Access Token (必填)", f"{str(sub.get('token', ''))[:4]}****" if sub.get("token") else "[red](未设置)[/red]")
             table.add_row("Cluster ID (选填)", str(sub.get("cluster") or "[dim](默认: volc_auc_common)[/dim]"))
+        elif p_id == "xiaomi_mimo":
+            key_val = sub.get("api_key") or asr_cfg.get("api_key", "")
+            table.add_row("API Key (必填)", f"{str(key_val)[:4]}****" if key_val else "[red](未设置)[/red]")
+            table.add_row("Base URL (选填)", str(sub.get("base_url") or "[dim](默认: https://api.xiaomimimo.com/v1)[/dim]"))
+            table.add_row("Model (选填)", str(sub.get("model") or "[dim](默认: mimo-v2.5-asr)[/dim]"))
         elif p_id == "qwen":
             key_val = sub.get("api_key") or asr_cfg.get("api_key", "")
             table.add_row("API Key (必填)", f"{str(key_val)[:4]}****" if key_val else "[red](未设置)[/red]")
@@ -224,10 +224,10 @@ def interactive_asr_detail(p_id: str, p_name: str) -> None:
         console.print(table)
 
         options_panel = "[bold green]1.[/bold green] ⚡ 切换设为当前全局生效的 ASR 服务商\n"
-        if p_id == "xiaomi_mimo":
-            options_panel += "[bold green]2.[/bold green] ✏️  修改 AppID\n[bold green]3.[/bold green] ✏️  修改 AppSecret\n"
-        elif p_id == "doubao":
+        if p_id == "doubao":
             options_panel += "[bold green]2.[/bold green] ✏️  修改 AppID\n[bold green]3.[/bold green] ✏️  修改 Access Token\n[bold green]4.[/bold green] ✏️  修改 Cluster ID (选填)\n"
+        elif p_id == "xiaomi_mimo":
+            options_panel += "[bold green]2.[/bold green] ✏️  修改 API Key\n[bold green]3.[/bold green] ✏️  修改 Base URL (选填)\n[bold green]4.[/bold green] ✏️  修改 Model 名称 (选填)\n"
         elif p_id == "qwen":
             options_panel += "[bold green]2.[/bold green] ✏️  修改 API Key\n[bold green]3.[/bold green] ✏️  修改 Model 名称 (选填)\n"
         else: # openai
@@ -244,22 +244,19 @@ def interactive_asr_detail(p_id: str, p_name: str) -> None:
             config_set("asr.provider", p_id)
             console.print(f"[bold green]✓ 成功切换 {p_name} 为当前全局 ASR 服务商！[/bold green]")
         elif c == "2":
-            if p_id == "xiaomi_mimo":
-                v = safe_prompt("请输入小米 AppID", str(sub.get("app_id", "")))
-                if v is not None: config_set("asr.xiaomi_mimo.app_id", v)
-            elif p_id == "doubao":
+            if p_id == "doubao":
                 v = safe_prompt("请输入豆包 AppID", str(sub.get("appid", "")))
                 if v is not None: config_set("asr.doubao.appid", v)
             else:
                 v = safe_prompt(f"请输入 {p_name} API Key", str(sub.get("api_key", "")))
                 if v is not None: config_set(f"asr.{p_id}.api_key", v)
         elif c == "3":
-            if p_id == "xiaomi_mimo":
-                v = safe_prompt("请输入小米 AppSecret", str(sub.get("app_secret", "")))
-                if v is not None: config_set("asr.xiaomi_mimo.app_secret", v)
-            elif p_id == "doubao":
+            if p_id == "doubao":
                 v = safe_prompt("请输入豆包 Access Token", str(sub.get("token", "")))
                 if v is not None: config_set("asr.doubao.token", v)
+            elif p_id == "xiaomi_mimo":
+                v = safe_prompt("请输入小米 MiMo Base URL", str(sub.get("base_url", "")))
+                if v is not None: config_set("asr.xiaomi_mimo.base_url", v)
             elif p_id == "qwen":
                 v = safe_prompt("请输入 Qwen ASR Model", str(sub.get("model", "")))
                 if v is not None: config_set("asr.qwen.model", v)
@@ -270,8 +267,11 @@ def interactive_asr_detail(p_id: str, p_name: str) -> None:
             if p_id == "doubao":
                 v = safe_prompt("请输入豆包 Cluster ID", str(sub.get("cluster", "")))
                 if v is not None: config_set("asr.doubao.cluster", v)
+            elif p_id == "xiaomi_mimo":
+                v = safe_prompt("请输入小米 MiMo Model 名称", str(sub.get("model", "")))
+                if v is not None: config_set("asr.xiaomi_mimo.model", v)
             elif p_id == "openai":
-                v = safe_prompt("请输入 OpenAI Model", str(sub.get("model", "")))
+                v = safe_prompt("请输入 OpenAI Model 名称", str(sub.get("model", "")))
                 if v is not None: config_set("asr.openai.model", v)
 
 def interactive_asr_center() -> None:
@@ -320,7 +320,7 @@ def interactive_llm_detail(p_id: str, p_name: str) -> None:
         table.add_row("全局激活状态", "[bold green]⚡ 当前全局生效[/bold green]" if is_active else "[dim]未激活[/dim]")
         table.add_row("模型名称 (Model)", str(sub.get("model") or "[dim](使用默认预设模型)[/dim]"))
 
-        if p_id != "ollama":
+        if p_id not in ["ollama", "local"]:
             key_val = sub.get("api_key") or llm_cfg.get("api_key", "")
             table.add_row("API Key (必填)", f"{str(key_val)[:4]}****" if key_val else "[red](未设置)[/red]")
             table.add_row("Base URL (选填)", str(sub.get("base_url") or "[dim](使用官方默认Endpoint)[/dim]"))
@@ -330,7 +330,7 @@ def interactive_llm_detail(p_id: str, p_name: str) -> None:
 
         options_panel = "[bold green]1.[/bold green] ⚡ 切换设为当前全局生效的 LLM 服务商\n"
         options_panel += "[bold green]2.[/bold green] ✏️  修改模型名称 (Model)\n"
-        if p_id != "ollama":
+        if p_id not in ["ollama", "local"]:
             options_panel += "[bold green]3.[/bold green] ✏️  修改 API Key\n"
             options_panel += "[bold green]4.[/bold green] ✏️  修改 Base URL (选填)\n"
             options_panel += "[bold green]5.[/bold green] ✏️  修改 System Prompt (选填)\n"
@@ -348,24 +348,24 @@ def interactive_llm_detail(p_id: str, p_name: str) -> None:
         elif c == "2":
             v = safe_prompt("请输入模型名称 (Model)", str(sub.get("model", "")))
             if v is not None: config_set(f"llm.{p_id}.model", v)
-        elif c == "3" and p_id != "ollama":
+        elif c == "3" and p_id not in ["ollama", "local"]:
             v = safe_prompt("请输入 API Key", str(sub.get("api_key", "")))
             if v is not None: config_set(f"llm.{p_id}.api_key", v)
-        elif c == "4" and p_id != "ollama":
+        elif c == "4" and p_id not in ["ollama", "local"]:
             v = safe_prompt("请输入 Base URL", str(sub.get("base_url", "")))
             if v is not None: config_set(f"llm.{p_id}.base_url", v)
-        elif c == "5" and p_id != "ollama":
+        elif c == "5" and p_id not in ["ollama", "local"]:
             v = safe_prompt("请输入 System Prompt", str(sub.get("system_prompt", "")))
             if v is not None: config_set(f"llm.{p_id}.system_prompt", v)
 
 def interactive_llm_center() -> None:
-    """LLM 文本精修服务商管理中心"""
+    """LLM 文本精修 7 大服务商管理中心"""
     while True:
         cm = ConfigManager()
         llm_cfg = cm.get("llm", default={})
         active_llm = llm_cfg.get("provider", "ollama")
 
-        table = Table(title="🤖 LLM 文本精修服务商管理中心", border_style="cyan")
+        table = Table(title="🤖 LLM 文本精修服务商管理中心 (7大供应商)", border_style="cyan")
         table.add_column("编号", style="bold yellow", justify="center")
         table.add_column("服务商名称", style="bold white")
         table.add_column("当前激活状态", justify="center")
@@ -378,9 +378,9 @@ def interactive_llm_center() -> None:
 
         console.print()
         console.print(table)
-        console.print("[dim]提示：输入编号 (1-6) 进入对应服务商参数修改或激活设置；输入 0 返回主菜单[/dim]")
+        console.print("[dim]提示：输入编号 (1-7) 进入对应服务商参数修改或激活设置；输入 0 返回主菜单[/dim]")
 
-        choice = Prompt.ask("请选择操作 [0-6]", choices=["0", "1", "2", "3", "4", "5", "6"], default="0")
+        choice = Prompt.ask("请选择操作 [0-7]", choices=["0", "1", "2", "3", "4", "5", "6", "7"], default="0")
         if choice == "0":
             break
         else:
@@ -500,7 +500,7 @@ def interactive() -> None:
             "[bold cyan]🎤 Voice Input 全功能终端交互控制中心 (TUI Console)[/bold cyan]\n\n"
             "[bold green]1.[/bold green] 🎤 开始全流程语音输入 (Voice Record Session)\n"
             "[bold green]2.[/bold green] 🎙️  ASR 语音识别服务商管理中心 (ASR Provider Center)\n"
-            "[bold green]3.[/bold green] 🤖 LLM 文本精修服务商管理中心 (LLM Provider Center)\n"
+            "[bold green]3.[/bold green] 🤖 LLM 文本精修 7 大服务商管理中心 (LLM Provider Center)\n"
             "[bold green]4.[/bold green] 🔍 检查 Backend Daemon 服务健康状态 (Daemon Status)\n"
             "[bold green]5.[/bold green] ⚙️  查看全局系统配置对象 (Show Global Config)\n"
             "[bold green]6.[/bold green] 🔄 触发 WebDAV 配置增量同步 (Sync WebDAV)\n"

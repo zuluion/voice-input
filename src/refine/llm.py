@@ -42,7 +42,6 @@ class LLMRefiner:
         self.provider = self.config.get("provider", "openai")
         provider_cfg = self.config.get(self.provider, {})
 
-        # 优先读取特定供应商配置下的 system_prompt，若未设置则回退至全局或默认
         provider_prompt = provider_cfg.get("system_prompt", "").strip()
         global_prompt = self.config.get("system_prompt", "").strip()
 
@@ -70,14 +69,14 @@ class LLMRefiner:
 
         # 2. Remote API Provider Handling
         if not self.api_key and "localhost" not in self.base_url and "127.0.0.1" not in self.base_url:
-            logger.log("LLM Refine", "LLM API Key is empty. Skipping LLM refinement.")
+            logger.log("LLM Refine", f"LLM API Key is empty for provider '{self.provider}'. Skipping LLM refinement.")
             return transcript
 
         proxy_info = get_current_proxy_str()
         proxy_tag = f" [VIA PROXY: {proxy_info}]" if proxy_info else " [DIRECT]"
 
         url = f"{self.base_url}/chat/completions"
-        logger.log("LLM Refine", f"Starting LLM refinement{proxy_tag} -> Model '{self.model}' at {url}")
+        logger.log("LLM Refine", f"Starting LLM refinement{proxy_tag} -> Provider '{self.provider}', Model '{self.model}' at {url}")
         logger.log("LLM Refine", f"Raw ASR Input: '{transcript}'")
 
         headers = {
@@ -96,6 +95,7 @@ class LLMRefiner:
         }
 
         try:
+            # 远程 API 请求受系统代理环境变量调控，超时设为 8 秒
             resp = requests.post(url, headers=headers, json=payload, timeout=8)
             logger.log("LLM Refine", f"Response HTTP status: {resp.status_code}")
             if resp.status_code == 200:
@@ -113,16 +113,16 @@ class LLMRefiner:
                 logger.log("LLM Refine", f"API Error ({resp.status_code}): {resp.text}")
                 return transcript
         except Exception as e:
-            logger.log("LLM Refine", f"Exception during refinement: {e}")
+            logger.log("LLM Refine Exception", f"Exception during refinement via '{self.provider}': {e}")
             return transcript
 
         return transcript
 
     def _refine_local(self, transcript: str) -> str:
-        """运行本地免编译 Ollama 引擎极速纠错与精修。"""
+        """运行本地免编译 Ollama 引擎极速纠错与精修 (强制本地直连，绝不走代理)。"""
         from src.utils.model_downloader import ensure_ollama_server_running, is_model_downloaded
         
-        model_id = self.model
+        model_id = self.model or "qwen2.5:1.5b"
         if not ensure_ollama_server_running():
             logger.log("LLM Refine", "Local Ollama engine server is not running. Skipping refinement.")
             return transcript
@@ -145,10 +145,10 @@ class LLMRefiner:
                     "temperature": 0.1
                 }
             }
-            resp = requests.post(url, json=payload, timeout=10)
+            # 关键修补: 本地 Ollama 必须加 proxies={"http": None, "https": None}，强制绕过代理，防止被全局代理把 127.0.0.1 卡住
+            resp = requests.post(url, json=payload, timeout=8, proxies={"http": None, "https": None})
             if resp.status_code == 200:
                 refined = resp.json().get("response", "").strip()
-                # 剥离模型可能多加的首尾包围引号
                 quote_chars = '"\'“”‘’`'
                 while len(refined) >= 2 and (
                     (refined[0] in quote_chars and refined[-1] in quote_chars)
@@ -164,7 +164,6 @@ class LLMRefiner:
             else:
                 logger.log("LLM Refine", f"Ollama API Error ({resp.status_code}): {resp.text}")
         except Exception as e:
-            logger.log("LLM Refine", f"Local Ollama execution exception: {e}")
+            logger.log("LLM Refine Exception", f"Local Ollama execution exception: {e}")
 
         return transcript
-

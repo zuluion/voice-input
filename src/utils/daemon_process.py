@@ -11,7 +11,7 @@ DEFAULT_DAEMON_URL = "http://127.0.0.1:28080"
 class DaemonProcessManager:
     """
     负责桌面 GUI 自动托管管理无头 Daemon 子进程的生命周期:
-    检查连通性、自动启动 Daemon、优雅停止 Daemon
+    检查连通性、自动启动 Daemon、全流程日志继承主终端打印、优雅停止 Daemon
     """
     def __init__(self, daemon_url: str = DEFAULT_DAEMON_URL) -> None:
         self.daemon_url = daemon_url.rstrip("/")
@@ -26,28 +26,27 @@ class DaemonProcessManager:
             return False
 
     def ensure_daemon_started(self) -> bool:
-        """若 Daemon 未运行则自动在后台启动子进程"""
+        """若 Daemon 未运行则自动在后台启动子进程，继承终端句柄无死锁输出日志"""
         if self.is_daemon_running():
-            logger.log("DaemonManager", "Daemon is already running.")
+            logger.log("DaemonManager", "Core Backend Daemon is already active.")
             return True
 
-        logger.log("DaemonManager", "Daemon not detected. Launching background process...")
+        logger.log("DaemonManager", "Daemon not detected. Launching managed daemon process...")
         try:
-            # 兼容打包环境与源码环境
             if getattr(sys, 'frozen', False):
                 cmd = [sys.executable, "--headless-daemon"]
             else:
                 cmd = [sys.executable, "-m", "src.backend.main_daemon"]
 
-            # 创建隐蔽后台子进程
             creationflags = 0
             if sys.platform == "win32":
                 creationflags = subprocess.CREATE_NO_WINDOW
 
+            # 使用 None 继承控制台句柄 (零 PIPE 管道缓冲区，绝对不引发 Windows 管道死锁)
             self.process = subprocess.Popen(
                 cmd,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
+                stdout=None,
+                stderr=None,
                 creationflags=creationflags
             )
 

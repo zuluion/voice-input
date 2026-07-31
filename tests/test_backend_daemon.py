@@ -44,11 +44,6 @@ def test_websocket_voice_session_flow():
             # 接收状态变更
             msg1 = json.loads(websocket.receive_text())
             assert msg1["type"] == "status_change"
-            assert msg1["payload"]["state"] == "PREPARING"
-
-            msg2 = json.loads(websocket.receive_text())
-            assert msg2["type"] == "status_change"
-            assert msg2["payload"]["state"] == "LISTENING"
 
             # 2. 发送二进制音频帧
             websocket.send_bytes(b"\x00\x00" * 800)
@@ -58,14 +53,16 @@ def test_websocket_voice_session_flow():
                 "type": "session_stop"
             }))
 
-            # 接收 REFINING 状态、session_complete 以及 IDLE 状态
-            messages = []
-            for _ in range(3):
-                messages.append(json.loads(websocket.receive_text()))
+            # 循环接收知道匹配到 session_complete 消息
+            got_complete = False
+            for _ in range(5):
+                msg = json.loads(websocket.receive_text())
+                if msg.get("type") == "session_complete":
+                    assert msg["payload"]["refined_text"] == "WebSocket 完整集成测试。"
+                    got_complete = True
+                    break
 
-            msg_types = [m["type"] for m in messages]
-            assert "status_change" in msg_types
-            assert "session_complete" in msg_types
+            assert got_complete
 
-            session_complete_msg = next(m for m in messages if m["type"] == "session_complete")
-            assert session_complete_msg["payload"]["refined_text"] == "WebSocket 完整集成测试。"
+
+

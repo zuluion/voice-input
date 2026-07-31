@@ -46,7 +46,7 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     },
     "llm": {
         "enabled": True,
-        "provider": "openai",
+        "provider": "local",
         "system_prompt": DEFAULT_SYSTEM_PROMPT,
         "openai": {
             "api_key": "",
@@ -71,7 +71,7 @@ DEFAULT_CONFIG: Dict[str, Any] = {
         "ollama": {
             "api_key": "",
             "base_url": "http://localhost:11434/v1",
-            "model": "qwen2.5:7b"
+            "model": "qwen2.5:1.5b"
         },
         "local": {
             "model": "qwen2.5:1.5b",

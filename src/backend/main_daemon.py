@@ -7,6 +7,7 @@ from src.core.engine import CoreEngine
 from src.refine.llm import LLMRefiner
 from src.utils.webdav import WebDAVSync
 from src.utils.logger import logger
+from src.utils.proxy import get_current_proxy_str
 
 app = FastAPI(
     title="Voice Input Headless Core Daemon",
@@ -24,7 +25,7 @@ async def get_health_status() -> Dict[str, Any]:
         "status": "ok",
         "engine_state": core_engine.state,
         "asr_provider": config_manager.get("asr", "provider", default="xiaomi_mimo"),
-        "llm_provider": config_manager.get("llm", "provider", default="ollama"),
+        "llm_provider": config_manager.get("llm", "provider", default="local"),
         "language": config_manager.get("language", default="auto")
     }
 
@@ -41,6 +42,9 @@ async def update_config(new_config: Dict[str, Any] = Body(...)) -> Dict[str, Any
         config_manager.save_config()
         # 重新实例化 llm_refiner
         core_engine.llm_refiner = LLMRefiner(config_manager.get("llm", default={}))
+        asr_p = config_manager.get("asr", "provider", default="xiaomi_mimo")
+        llm_p = config_manager.get("llm", "provider", default="local")
+        logger.log("Daemon Config", f"Config updated & hot-reloaded via REST API. Active ASR: '{asr_p}', Active LLM: '{llm_p}'")
         return {"status": "success", "config": config_manager.config}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to update config: {e}")
@@ -76,20 +80,22 @@ async def voice_session_websocket(websocket: WebSocket) -> None:
     current_loop = asyncio.get_running_loop()
     core_engine.event_bus.set_loop(current_loop)
 
-    # 注册事件总线通知转发给 WebSocket 客户端
     async def on_state_changed(state: str, detail: str) -> None:
+        logger.log("Daemon WS", f"Broadcasting State Change -> '{state}' ({detail})")
         await websocket.send_text(json.dumps({
             "type": "status_change",
             "payload": {"state": state, "detail": detail}
         }))
 
     async def on_asr_partial(text: str, is_final: bool) -> None:
+        logger.log("Daemon ASR", f"Live ASR Partial -> '{text}' (Final: {is_final})")
         await websocket.send_text(json.dumps({
             "type": "asr_partial_result",
             "payload": {"text": text, "is_final": is_final}
         }))
 
     async def on_error(err_msg: str) -> None:
+        logger.log("Daemon Error", f"Broadcasting Error -> {err_msg}")
         await websocket.send_text(json.dumps({
             "type": "error",
             "payload": {"message": err_msg}
@@ -112,14 +118,27 @@ async def voice_session_websocket(websocket: WebSocket) -> None:
 
                 if msg_type == "session_start":
                     override_asr = data.get("payload", {}).get("override_config", {}).get("asr_provider")
+                    active_asr = override_asr or config_manager.get("asr", "provider", default="xiaomi_mimo")
+                    active_llm = config_manager.get("llm", "provider", default="local")
+                    proxy_str = get_current_proxy_str()
+                    proxy_tag = f" [VIA PROXY: {proxy_str}]" if proxy_str else " [DIRECT]"
+
+                    logger.log("Daemon Session", f"▶ Session Started{proxy_tag} | Active ASR: '{active_asr}' | Active LLM: '{active_llm}'")
                     core_engine.start_session(override_asr_provider=override_asr)
 
+
+
                 elif msg_type == "session_stop":
+                    logger.log("Daemon Session", "⏹ Session Stop command received. Processing audio & triggering LLM refinement...")
                     refined_text = await core_engine.stop_session_and_refine_async()
+                    trace_meta = getattr(core_engine, "last_trace_meta", {})
+                    logger.log("Daemon Session", f"✔ Session Completed. Final Text: '{refined_text}'")
+
                     await websocket.send_text(json.dumps({
                         "type": "session_complete",
                         "payload": {
-                            "refined_text": refined_text
+                            "refined_text": refined_text,
+                            "meta": trace_meta
                         }
                     }))
 

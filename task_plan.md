@@ -26,3 +26,10 @@
   - [x] Refactored `src/main.py` (`VoiceInputController`) into Thin Desktop Client with `DaemonProcessManager` auto-托管 lifecycle.
   - [x] Bound GUI capsule, audio recorder, and settings window to Daemon via WebSocket and REST APIs.
   - [x] Added `tests/test_thin_client.py` and passed full regression suite (47/47 passed).
+- [x] **Phase 5: PyTest Execution Freeze & Async WebSocket Stability Fix**
+  - [x] Fixed `llm_model` `MagicMock` JSON serialization in `last_trace_meta`.
+  - [x] Added UTF-8 / GBK encoding fallback protection to `AppLogger`.
+  - [x] Optimized `EventBus.emit()` for same-loop `create_task` dispatch.
+  - [x] Configured `NO_PROXY` / `no_proxy` loopback bypass in `apply_proxy_config()`.
+  - [x] Full regression test suite passed (48/48 passed).
+

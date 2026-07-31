@@ -31,7 +31,17 @@ class AppLogger:
     def log(self, tag: str, message: str) -> None:
         ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
         formatted = f"[{ts}] [{tag}] {message}"
-        print(formatted)
+        try:
+            print(formatted, flush=True)
+        except Exception:
+            try:
+                import sys
+                encoding = getattr(sys.stdout, "encoding", "utf-8") or "utf-8"
+                safe_str = formatted.encode(encoding, errors="replace").decode(encoding, errors="replace")
+                sys.stdout.write(safe_str + "\n")
+                sys.stdout.flush()
+            except Exception:
+                pass
 
         if self.enabled and self.log_dir:
             today_str = datetime.now().strftime("%Y%m%d")
@@ -40,6 +50,10 @@ class AppLogger:
                 with open(log_file, "a", encoding="utf-8") as f:
                     f.write(formatted + "\n")
             except Exception as e:
-                print(f"[AppLogger Error] {e}")
+                try:
+                    print(f"[AppLogger Error] {e}")
+                except Exception:
+                    pass
+
 
 logger = AppLogger.get_instance()
