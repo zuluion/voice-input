@@ -10,3 +10,15 @@
 - [x] **Model Preset Refinement**: Pinned `qwen2.5:1.5b` (986MB) and `qwen2.5:3b` (1.9GB) as default local models, removing 0.5B model.
 - [x] **Linked Process Tree Lifecycle Teardown**: Bound Ollama process to Win32 Job Object (`JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE`) and added `taskkill /F /T` tree termination on app exit.
 - [x] **Testing & Verification**: Verified via `pytest` (30/30 passed).
+- [x] **Decoupled Architecture & Spec Design**: Authored decoupled architecture design ([optimization_decoupled_architecture_design_2026-07-31.md](file:///D:/AllProjects/OtherProjects_Workspace/voice-input/docs/specs/optimization_decoupled_architecture_design_2026-07-31.md)) and full-flow CLI spec ([spec_decoupled_architecture_and_cli.md](file:///D:/AllProjects/OtherProjects_Workspace/voice-input/docs/specs/spec_decoupled_architecture_and_cli.md)).
+
+## Upcoming Refactoring & Testing Tasks (Phase 1 to Phase 3)
+- [ ] **Phase 1: In-Memory CoreEngine Extraction & Async EventBus**
+  - [ ] Extract `CoreEngine` from `VoiceInputController`, replacing Qt `Signal/Slot` with async EventBus.
+  - [ ] Write unit tests for `CoreEngine` and EventBus.
+- [ ] **Phase 2: Headless Daemon (FastAPI/WebSockets) & HAL Separation**
+  - [ ] Implement `src/backend/main_daemon.py` with RESTful `/api/v1` and WebSocket `/ws/v1/voice-session`.
+  - [ ] Write API integration & WebSocket stream tests.
+- [ ] **Phase 3: Full-Flow CLI Tool (`voice-input-cli`) & E2E Testing**
+  - [ ] Implement `voice-input-cli` (daemon lifecycle, TUI config, record command with Rich ASCII wave and stdout/clipboard outputs).
+  - [ ] Write CLI integration & end-to-end full-flow tests.
