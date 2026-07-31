@@ -3,6 +3,7 @@ import numpy as np
 import sounddevice as sd
 from typing import Callable, Optional, List, Dict, Any
 from PySide6.QtCore import QObject, Signal
+from src.utils.logger import logger
 
 BAR_WEIGHTS = [0.5, 0.8, 1.0, 0.75, 0.55]
 
@@ -63,13 +64,13 @@ class AudioRecorder(QObject):
             input_devices = [d for d in devices if d.get('max_input_channels', 0) > 0]
             if not input_devices:
                 err_msg = "未检测到可用的麦克风/语音输入设备，请连接麦克风后再试！"
-                print(f"[Audio Engine Error] {err_msg}")
+                logger.log("Audio Engine Error", err_msg)
                 self.is_recording = False
                 self._emit_error(err_msg)
                 return
         except Exception as e:
             err_msg = f"麦克风设备检测异常: {str(e)}"
-            print(f"[Audio Engine Error] {err_msg}")
+            logger.log("Audio Engine Error", err_msg)
             self.is_recording = False
             self._emit_error(err_msg)
             return
@@ -97,7 +98,7 @@ class AudioRecorder(QObject):
                 try:
                     self.on_chunk_cb(pcm_bytes)
                 except Exception as e:
-                    print(f"[Audio Callback Error] {e}")
+                    logger.log("Audio Callback Error", str(e))
 
             # RMS Calculation
             audio_samples = indata.flatten()
@@ -143,7 +144,7 @@ class AudioRecorder(QObject):
             self.stream.start()
         except Exception as e:
             err_msg = f"无法启动麦克风录音: {str(e)}"
-            print(f"[Audio Engine Error] {err_msg}")
+            logger.log("Audio Engine Error", err_msg)
             self.is_recording = False
             self._emit_error(err_msg)
 

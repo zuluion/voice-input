@@ -49,6 +49,13 @@ class CoreEngine:
         asr_cfg = self.config_manager.get("asr", default={})
 
         try:
+            if self.current_asr:
+                try:
+                    self.current_asr.disconnect()
+                except Exception as clean_err:
+                    logger.log("CoreEngine Clean Warning", f"Error disconnecting previous ASR provider: {clean_err}")
+                self.current_asr = None
+
             self.current_asr = create_asr_provider(asr_p, asr_cfg)
             self.current_asr.on_partial_result = self._on_asr_text_updated
             self.current_asr.on_error = self._on_asr_error

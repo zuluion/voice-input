@@ -13,7 +13,7 @@ from rich.table import Table
 from rich.prompt import Prompt
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
-from src.config import ConfigManager
+from src.config import ConfigManager, DEFAULT_DAEMON_URL
 from src.core.engine import CoreEngine
 from src.utils.injector import TextInjector
 from src.utils.logger import logger
@@ -32,7 +32,6 @@ app.add_typer(daemon_app, name="daemon")
 app.add_typer(config_app, name="config")
 
 console = Console()
-DEFAULT_DAEMON_URL = "http://127.0.0.1:28080"
 ASCII_BARS = [" ", "▂", "▃", "▄", "▅", "▆", "▇", "█"]
 
 # --- Daemon 管理命令 ---

@@ -3,6 +3,7 @@ import wave
 import json
 import requests
 from src.asr.base import BaseASRProvider
+from src.utils.logger import logger
 
 class DoubaoASRProvider(BaseASRProvider):
     def __init__(self, config: dict = None) -> None:
@@ -20,16 +21,16 @@ class DoubaoASRProvider(BaseASRProvider):
 
     def finish(self) -> str:
         if not self.pcm_chunks:
-            print("[Doubao ASR] No audio PCM chunks captured.")
+            logger.log("Doubao ASR", "No audio PCM chunks captured.")
             return ""
 
         if not self.app_id or not self.access_token:
             err_msg = "Doubao ASR Error: Missing app_id or access_token in config."
-            print(f"[Doubao ASR] {err_msg}")
+            logger.log("Doubao ASR", err_msg)
             self.error_occurred.emit(err_msg)
             return ""
 
-        print(f"[Doubao ASR] Processing {len(self.pcm_chunks)} bytes of PCM audio...")
+        logger.log("Doubao ASR", f"Processing {len(self.pcm_chunks)} bytes of PCM audio...")
 
         wav_io = io.BytesIO()
         with wave.open(wav_io, 'wb') as wf:
@@ -53,22 +54,22 @@ class DoubaoASRProvider(BaseASRProvider):
         }
 
         try:
-            print(f"[Doubao ASR] Sending POST request to {url}...")
+            logger.log("Doubao ASR", f"Sending POST request to {url}...")
             resp = requests.post(url, headers=headers, json=payload, timeout=12)
-            print(f"[Doubao ASR] Response HTTP status: {resp.status_code}")
+            logger.log("Doubao ASR", f"Response HTTP status: {resp.status_code}")
             if resp.status_code == 200:
                 res_json = resp.json()
                 text = res_json.get("result", [{}])[0].get("text", "").strip()
-                print(f"[Doubao ASR] Recognized text: '{text}'")
+                logger.log("Doubao ASR", f"Recognized text: '{text}'")
                 self.text_updated.emit(text, True)
                 return text
             else:
                 err_msg = f"Doubao ASR Error ({resp.status_code}): {resp.text}"
-                print(f"[Doubao ASR] {err_msg}")
+                logger.log("Doubao ASR", err_msg)
                 self.error_occurred.emit(err_msg)
                 return ""
         except Exception as e:
             err_msg = f"Doubao ASR Exception: {str(e)}"
-            print(f"[Doubao ASR] {err_msg}")
+            logger.log("Doubao ASR", err_msg)
             self.error_occurred.emit(err_msg)
             return ""

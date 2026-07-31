@@ -2,6 +2,7 @@ import io
 import wave
 import requests
 from src.asr.base import BaseASRProvider
+from src.utils.logger import logger
 
 class OpenAIHTTPASRProvider(BaseASRProvider):
     def __init__(self, config: dict = None) -> None:
@@ -19,10 +20,10 @@ class OpenAIHTTPASRProvider(BaseASRProvider):
 
     def finish(self) -> str:
         if not self.pcm_chunks:
-            print("[OpenAI ASR] No audio PCM chunks captured.")
+            logger.log("OpenAI ASR", "No audio PCM chunks captured.")
             return ""
 
-        print(f"[OpenAI ASR] Processing {len(self.pcm_chunks)} bytes of PCM audio...")
+        logger.log("OpenAI ASR", f"Processing {len(self.pcm_chunks)} bytes of PCM audio...")
 
         wav_io = io.BytesIO()
         with wave.open(wav_io, 'wb') as wf:
@@ -44,21 +45,21 @@ class OpenAIHTTPASRProvider(BaseASRProvider):
 
         url = f"{self.base_url}/audio/transcriptions"
         try:
-            print(f"[OpenAI ASR] Sending POST request to {url}...")
+            logger.log("OpenAI ASR", f"Sending POST request to {url}...")
             resp = requests.post(url, headers=headers, files=files, data=data, timeout=12)
-            print(f"[OpenAI ASR] Response HTTP status: {resp.status_code}")
+            logger.log("OpenAI ASR", f"Response HTTP status: {resp.status_code}")
             if resp.status_code == 200:
                 text = resp.json().get("text", "").strip()
-                print(f"[OpenAI ASR] Recognized text: '{text}'")
+                logger.log("OpenAI ASR", f"Recognized text: '{text}'")
                 self.text_updated.emit(text, True)
                 return text
             else:
                 err_msg = f"OpenAI ASR Error ({resp.status_code}): {resp.text}"
-                print(f"[OpenAI ASR] {err_msg}")
+                logger.log("OpenAI ASR", err_msg)
                 self.error_occurred.emit(err_msg)
                 return ""
         except Exception as e:
             err_msg = f"OpenAI ASR Exception: {str(e)}"
-            print(f"[OpenAI ASR] {err_msg}")
+            logger.log("OpenAI ASR", err_msg)
             self.error_occurred.emit(err_msg)
             return ""

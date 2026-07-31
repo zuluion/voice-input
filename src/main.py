@@ -18,19 +18,20 @@ from PySide6.QtWidgets import QApplication, QMessageBox, QSystemTrayIcon
 from PySide6.QtCore import QObject, Signal, QThread, QTimer
 
 from src.i18n import i18n
-from src.config import ConfigManager
+from src.config import ConfigManager, DEFAULT_DAEMON_URL, DEFAULT_DAEMON_WS_URL
 from src.core.hotkey import HotkeyListener
 from src.audio.recorder import AudioRecorder
 from src.utils.injector import TextInjector
 from src.utils.proxy import apply_proxy_config
 from src.utils.webdav import WebDAVSync
-from src.utils.daemon_process import DaemonProcessManager, DEFAULT_DAEMON_URL
+from src.utils.daemon_process import DaemonProcessManager
 from src.utils.model_downloader import stop_ollama_server
 from src.utils.logger import logger
 from src.ui.capsule import FloatingCapsule
 from src.ui.tray import SystemTrayApp
 from src.ui.settings import SettingsWindow
 
+import time
 import websocket
 
 class WebSocketClientWorker(QThread):
@@ -42,7 +43,7 @@ class WebSocketClientWorker(QThread):
     session_completed = Signal(str, dict)     # (refined_text, trace_meta)
     error_occurred = Signal(str)             # (err_msg)
 
-    def __init__(self, ws_url: str = "ws://127.0.0.1:28080/ws/v1/voice-session") -> None:
+    def __init__(self, ws_url: str = DEFAULT_DAEMON_WS_URL) -> None:
         super().__init__()
         self.ws_url = ws_url
         self.ws: Optional[websocket.WebSocketApp] = None

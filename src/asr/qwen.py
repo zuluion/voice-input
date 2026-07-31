@@ -2,6 +2,7 @@ import io
 import wave
 import requests
 from src.asr.base import BaseASRProvider
+from src.utils.logger import logger
 
 class QwenASRProvider(BaseASRProvider):
     def __init__(self, config: dict = None) -> None:
@@ -18,16 +19,16 @@ class QwenASRProvider(BaseASRProvider):
 
     def finish(self) -> str:
         if not self.pcm_chunks:
-            print("[Qwen ASR] No audio PCM chunks captured.")
+            logger.log("Qwen ASR", "No audio PCM chunks captured.")
             return ""
 
         if not self.api_key:
             err_msg = "Qwen ASR Error: Missing api_key in config."
-            print(f"[Qwen ASR] {err_msg}")
+            logger.log("Qwen ASR", err_msg)
             self.error_occurred.emit(err_msg)
             return ""
 
-        print(f"[Qwen ASR] Processing {len(self.pcm_chunks)} bytes of PCM audio...")
+        logger.log("Qwen ASR", f"Processing {len(self.pcm_chunks)} bytes of PCM audio...")
 
         wav_io = io.BytesIO()
         with wave.open(wav_io, 'wb') as wf:
@@ -50,21 +51,21 @@ class QwenASRProvider(BaseASRProvider):
         }
 
         try:
-            print(f"[Qwen ASR] Sending POST request to {url}...")
+            logger.log("Qwen ASR", f"Sending POST request to {url}...")
             resp = requests.post(url, headers=headers, files=files, data=data, timeout=12)
-            print(f"[Qwen ASR] Response HTTP status: {resp.status_code}")
+            logger.log("Qwen ASR", f"Response HTTP status: {resp.status_code}")
             if resp.status_code == 200:
                 text = resp.json().get("text", "").strip()
-                print(f"[Qwen ASR] Recognized text: '{text}'")
+                logger.log("Qwen ASR", f"Recognized text: '{text}'")
                 self.text_updated.emit(text, True)
                 return text
             else:
                 err_msg = f"Qwen ASR Error ({resp.status_code}): {resp.text}"
-                print(f"[Qwen ASR] {err_msg}")
+                logger.log("Qwen ASR", err_msg)
                 self.error_occurred.emit(err_msg)
                 return ""
         except Exception as e:
             err_msg = f"Qwen ASR Exception: {str(e)}"
-            print(f"[Qwen ASR] {err_msg}")
+            logger.log("Qwen ASR", err_msg)
             self.error_occurred.emit(err_msg)
             return ""

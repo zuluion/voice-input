@@ -4,9 +4,8 @@ import time
 import subprocess
 import requests
 from typing import Optional
+from src.config import DEFAULT_DAEMON_URL
 from src.utils.logger import logger
-
-DEFAULT_DAEMON_URL = "http://127.0.0.1:28080"
 
 class DaemonProcessManager:
     """

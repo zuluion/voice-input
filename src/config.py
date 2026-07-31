@@ -2,6 +2,11 @@ import json
 import os
 from typing import Any, Dict
 
+DEFAULT_DAEMON_HOST = "127.0.0.1"
+DEFAULT_DAEMON_PORT = 28080
+DEFAULT_DAEMON_URL = f"http://{DEFAULT_DAEMON_HOST}:{DEFAULT_DAEMON_PORT}"
+DEFAULT_DAEMON_WS_URL = f"ws://{DEFAULT_DAEMON_HOST}:{DEFAULT_DAEMON_PORT}/ws/v1/voice-session"
+
 DEFAULT_SYSTEM_PROMPT = """你是一个专业的语音输入文本精修与整理助手。请对输入的语音识别文本进行智能润色与纠错，严格遵循以下规则：
 
 1. 移除口语冗余：自动删除语气词（如“呃”、“啊”、“那个”、“就是”）、口吃重叠字及无意义的语气停顿。

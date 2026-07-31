@@ -2,7 +2,7 @@ import asyncio
 import json
 from typing import Dict, Any, Optional
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Body
-from src.config import ConfigManager
+from src.config import ConfigManager, DEFAULT_DAEMON_HOST, DEFAULT_DAEMON_PORT
 from src.core.engine import CoreEngine
 from src.refine.llm import LLMRefiner
 from src.utils.webdav import WebDAVSync
@@ -16,6 +16,7 @@ app = FastAPI(
 )
 
 config_manager = ConfigManager()
+logger.configure(config_manager.get("debug", default={}), config_manager.config_path)
 core_engine = CoreEngine(config_manager)
 
 @app.get("/api/v1/health")
@@ -40,7 +41,8 @@ async def update_config(new_config: Dict[str, Any] = Body(...)) -> Dict[str, Any
     try:
         config_manager.config.update(new_config)
         config_manager.save_config()
-        # 重新实例化 llm_refiner
+        # 热重载 Logger 与 LLM Refiner
+        logger.configure(config_manager.get("debug", default={}), config_manager.config_path)
         core_engine.llm_refiner = LLMRefiner(config_manager.get("llm", default={}))
         asr_p = config_manager.get("asr", "provider", default="xiaomi_mimo")
         llm_p = config_manager.get("llm", "provider", default="local")
@@ -117,6 +119,14 @@ async def voice_session_websocket(websocket: WebSocket) -> None:
                 msg_type = data.get("type")
 
                 if msg_type == "session_start":
+                    if core_engine.state != CoreEngine.STATE_IDLE:
+                        logger.log("Daemon Session Warning", f"Rejected 'session_start': Engine is currently in state '{core_engine.state}'")
+                        await websocket.send_text(json.dumps({
+                            "type": "error",
+                            "payload": {"message": f"Session busy: Core engine is currently in state '{core_engine.state}'"}
+                        }))
+                        continue
+
                     override_asr = data.get("payload", {}).get("override_config", {}).get("asr_provider")
                     active_asr = override_asr or config_manager.get("asr", "provider", default="xiaomi_mimo")
                     active_llm = config_manager.get("llm", "provider", default="local")
@@ -125,8 +135,6 @@ async def voice_session_websocket(websocket: WebSocket) -> None:
 
                     logger.log("Daemon Session", f"▶ Session Started{proxy_tag} | Active ASR: '{active_asr}' | Active LLM: '{active_llm}'")
                     core_engine.start_session(override_asr_provider=override_asr)
-
-
 
                 elif msg_type == "session_stop":
                     logger.log("Daemon Session", "⏹ Session Stop command received. Processing audio & triggering LLM refinement...")
@@ -151,7 +159,7 @@ async def voice_session_websocket(websocket: WebSocket) -> None:
         core_engine.event_bus.unsubscribe(CoreEngine.EVENT_ASR_PARTIAL, on_asr_partial)
         core_engine.event_bus.unsubscribe(CoreEngine.EVENT_ERROR, on_error)
 
-def start_daemon(host: str = "127.0.0.1", port: int = 28080) -> None:
+def start_daemon(host: str = DEFAULT_DAEMON_HOST, port: int = DEFAULT_DAEMON_PORT) -> None:
     """本地拉起 Daemon 守护进程"""
     import uvicorn
     uvicorn.run(app, host=host, port=port, log_level="info")
