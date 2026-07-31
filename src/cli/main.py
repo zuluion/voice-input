@@ -236,7 +236,8 @@ def record(
 def interactive() -> None:
     """启动 Voice Input 交互式 TUI 终端控制台菜单 (Interactive Console)"""
     while True:
-        console.print("\n" + Panel(
+        console.print()
+        console.print(Panel(
             "[bold cyan]🎤 Voice Input 全功能终端交互控制中心 (TUI Console)[/bold cyan]\n\n"
             "[bold green]1.[/bold green] 🎤 开始全流程语音输入 (Voice Record Session)\n"
             "[bold green]2.[/bold green] 🔍 检查 Backend Daemon 服务健康状态 (Daemon Status)\n"

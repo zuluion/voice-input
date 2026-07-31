@@ -56,3 +56,11 @@ def test_cli_record_full_flow_normal_output():
                 result = runner.invoke(app, ["record", "--duration", "1", "--no-copy"])
                 assert result.exit_code == 0
                 assert "命令行终端录音测试。" in result.stdout
+
+def test_cli_interactive_menu():
+    # 模拟用户在主菜单选择 '0' 退出
+    result = runner.invoke(app, [], input="0\n")
+    assert result.exit_code == 0
+    assert "Voice Input 全功能终端交互控制中心" in result.stdout
+    assert "已退出控制台" in result.stdout
+

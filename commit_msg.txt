@@ -1,0 +1,5 @@
+fix(cli): fix Panel concatenation in interactive TUI menu
+
+修改文件：
+├── src/cli/main.py    — 修复 interactive 菜单 Panel 打印拼写错误
+└── tests/test_cli.py  — 增加对 interactive 菜单唤起与退出的测试覆盖
