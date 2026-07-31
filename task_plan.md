@@ -22,4 +22,7 @@
 - [x] **Phase 3: Full-Flow CLI Tool (`voice-input-cli`) & E2E Testing**
   - [x] Implemented `voice-input-cli` (daemon lifecycle, TUI config, record command with Rich ASCII wave and stdout/clipboard outputs in `src/cli/main.py`).
   - [x] CLI integration & end-to-end full-flow tests passed (`tests/test_cli.py`).
-- [x] **Full Regression Verification**: All 45/45 tests passed.
+- [x] **Phase 4: PySide6 Thin Client Adapter**
+  - [x] Refactored `src/main.py` (`VoiceInputController`) into Thin Desktop Client with `DaemonProcessManager` auto-托管 lifecycle.
+  - [x] Bound GUI capsule, audio recorder, and settings window to Daemon via WebSocket and REST APIs.
+  - [x] Added `tests/test_thin_client.py` and passed full regression suite (47/47 passed).

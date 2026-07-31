@@ -1,0 +1,11 @@
+refactor(ui): convert PySide6 desktop controller into decoupled thin client
+
+修改文件：
+├── task_plan.md                       — 记录瘦客户端重构与 47 项测试完成
+├── progress.md                        — 更新项目测试进度 (47/47 passed)
+├── src/
+│   ├── main.py                        — 改造 VoiceInputController 为瘦客户端，通过 WebSocket 接入 Daemon
+│   └── utils/
+│       └── daemon_process.py          — 新增 DaemonProcessManager 托管无头后端生命周期
+└── tests/
+    └── test_thin_client.py            — 新增 Thin Client 连通与 Daemon 托管集成测试
