@@ -1,4 +1,0 @@
-feat(cli): add interactive config picker sub-menu
-
-修改文件：
-└── src/cli/main.py    — 实现完全免敲字段名、分门别类的交互式配置修改子菜单
