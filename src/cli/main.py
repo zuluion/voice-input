@@ -114,6 +114,13 @@ def config_set(key_path: str, value: str) -> None:
 
     target[parts[-1]] = typed_val
     cm.save_config()
+
+    # 尝试同步通知 Daemon 热加载
+    try:
+        requests.put(f"{DEFAULT_DAEMON_URL}/api/v1/config", json=cm.config, timeout=2, proxies={"http": None, "https": None})
+    except Exception:
+        pass
+
     console.print(f"[bold green]✓ Updated configuration key '{key_path}' -> {typed_val}[/bold green]")
 
 @config_app.command("sync")
@@ -127,6 +134,61 @@ def config_sync(url: str = DEFAULT_DAEMON_URL) -> None:
             console.print(f"[bold red]✗ WebDAV Sync Failed:[/bold red] {res.json().get('detail')}")
     except Exception as e:
         console.print(f"[bold red]✗ WebDAV Sync Exception:[/bold red] {e}")
+
+# --- 交互式配置修改子菜单 ---
+
+def interactive_config_picker() -> None:
+    """完全免敲路径、全菜单化的配置修改器"""
+    cm = ConfigManager()
+    while True:
+        console.print()
+        console.print(Panel(
+            "[bold yellow]⚙️  交互式配置修改中心 (Config Picker)[/bold yellow]\n\n"
+            "[bold green]1.[/bold green] 🎙️  设置 ASR 语音识别服务商 (ASR Provider)\n"
+            "[bold green]2.[/bold green] 🤖 设置 LLM 文本精修服务商 (LLM Provider)\n"
+            "[bold green]3.[/bold green] 🌐 设置系统语言 (Language)\n"
+            "[bold green]4.[/bold green] 🔑 快速设置 ASR / LLM 的 API Key\n"
+            "[bold green]5.[/bold green] 🛠️  高级: 手动输入自定义 Key 路径\n"
+            "[bold red]0.[/bold red] 🔙 返回主菜单",
+            title="Interactive Config Sub-Menu",
+            border_style="yellow"
+        ))
+
+        sub_choice = Prompt.ask("请选择修改分类 [0-5]", choices=["0", "1", "2", "3", "4", "5"], default="1")
+
+        if sub_choice == "0":
+            break
+        elif sub_choice == "1":
+            cur_asr = cm.get("asr", "provider", default="xiaomi_mimo")
+            console.print(f"\n[dim]当前 ASR 供应商: {cur_asr}[/dim]")
+            console.print("1. 小米 MiMo (xiaomi_mimo)\n2. 豆包 ASR (doubao)\n3. 通义千问 (qwen)\n4. OpenAI ASR (openai)")
+            asr_c = Prompt.ask("请选择新的 ASR 供应商", choices=["1", "2", "3", "4"], default="1")
+            asr_map = {"1": "xiaomi_mimo", "2": "doubao", "3": "qwen", "4": "openai"}
+            config_set("asr.provider", asr_map[asr_c])
+        elif sub_choice == "2":
+            cur_llm = cm.get("llm", "provider", default="ollama")
+            console.print(f"\n[dim]当前 LLM 供应商: {cur_llm}[/dim]")
+            console.print("1. 本地 Ollama (ollama)\n2. DeepSeek (deepseek)\n3. 豆包 LLM (doubao)\n4. 通义千问 (qwen)\n5. OpenAI (openai)\n6. 小米 LLM (xiaomi)")
+            llm_c = Prompt.ask("请选择新的 LLM 供应商", choices=["1", "2", "3", "4", "5", "6"], default="1")
+            llm_map = {"1": "ollama", "2": "deepseek", "3": "doubao", "4": "qwen", "5": "openai", "6": "xiaomi"}
+            config_set("llm.provider", llm_map[llm_c])
+        elif sub_choice == "3":
+            console.print("\n1. 自动识别 (auto)\n2. 简体中文 (zh_CN)\n3. 英文 (en)")
+            lang_c = Prompt.ask("请选择界面语言", choices=["1", "2", "3"], default="1")
+            lang_map = {"1": "auto", "2": "zh_CN", "3": "en"}
+            config_set("language", lang_map[lang_c])
+        elif sub_choice == "4":
+            target_p = Prompt.ask("请输入要设置 API Key 的供应商名称 (例如: deepseek / doubao / qwen / openai / xiaomi)")
+            if target_p:
+                key_val = Prompt.ask(f"请输入 {target_p} 的 API Key")
+                if key_val:
+                    config_set(f"llm.{target_p}.api_key", key_val)
+                    config_set(f"asr.{target_p}.api_key", key_val)
+        elif sub_choice == "5":
+            key = Prompt.ask("请输入配置键路径 (例如: ui.position 或 proxy.http)")
+            val = Prompt.ask("请输入对应的新值")
+            if key and val:
+                config_set(key, val)
 
 # --- 全流程录音命令 ---
 
@@ -242,7 +304,7 @@ def interactive() -> None:
             "[bold green]1.[/bold green] 🎤 开始全流程语音输入 (Voice Record Session)\n"
             "[bold green]2.[/bold green] 🔍 检查 Backend Daemon 服务健康状态 (Daemon Status)\n"
             "[bold green]3.[/bold green] ⚙️  查看系统当前全局配置 (Show Configuration)\n"
-            "[bold green]4.[/bold green] ✏️  修改配置项 (Set Config Option)\n"
+            "[bold green]4.[/bold green] ✏️  修改配置项 (Interactive Config Picker)\n"
             "[bold green]5.[/bold green] 🔄 触发 WebDAV 配置增量同步 (Sync WebDAV)\n"
             "[bold red]0.[/bold red] 🚪 退出 TUI 控制台",
             title="Interactive Main Menu",
@@ -263,10 +325,7 @@ def interactive() -> None:
         elif choice == "3":
             config_show()
         elif choice == "4":
-            key = Prompt.ask("请输入配置键路径 (例如: asr.provider 或 llm.provider)")
-            val = Prompt.ask("请输入对应的新值 (例如: xiaomi_mimo 或 ollama)")
-            if key and val:
-                config_set(key_path=key, value=val)
+            interactive_config_picker()
         elif choice == "5":
             config_sync()
 
